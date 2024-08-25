@@ -89,7 +89,7 @@ CELERY_RESULT_BACKEND=redis://redis:6379/0
 POSTGRES_USER=your-db-user
 POSTGRES_PASSWORD=your-db-password
 POSTGRES_DB=your-db-name
-POSTGRES_HOST=db
+POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 ```
 
