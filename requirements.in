@@ -6,3 +6,4 @@ sqlalchemy
 uvicorn
 urllib3
 python-dotenv
+psycopg2

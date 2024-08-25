@@ -76,6 +76,10 @@ alembic revision --autogenerate -m "Initial migration"
 alembic upgrade head
 ```
 
+## Apply the migration to Docker
+
+In Docker, thanks to the command in the web container, the migrations are applied successfully on start.
+
 ## Environment Variables
 Your .env file should contain the following environment variables:
 
