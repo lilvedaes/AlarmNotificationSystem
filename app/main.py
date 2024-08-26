@@ -53,7 +53,7 @@ async def create_alarm(alarm: schemas.AlarmCreate, db: AsyncSession = Depends(ge
     db_user = await crud.get_user_by_username(db, username=alarm.username)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    alarm_data = schemas.AlarmCreate(**alarm.dict(), username=db_user.username)
+    alarm_data = schemas.AlarmCreate(**alarm.dict())
 
     # Validate the days_of_week field
     for day in alarm_data.days_of_week:

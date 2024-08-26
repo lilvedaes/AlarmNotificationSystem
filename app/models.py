@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, Time, Boolean, ForeignKey,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Mapped
+from sqlalchemy.sql import func
 from typing import List
 
 Base = declarative_base()
@@ -13,7 +14,7 @@ class User(Base):
     username = Column(String(50), nullable=False, unique=True)
     email = Column(String(255), nullable=False)
     phone_number = Column(String(20), nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True), default='CURRENT_TIMESTAMP')
+    created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     
     # Relationship to alarms
     alarms: Mapped[List["Alarm"]] = relationship(back_populates="user")
@@ -29,8 +30,8 @@ class Alarm(Base):
     is_active = Column(Boolean, default=True)
     send_sms = Column(Boolean, default=False)
     send_email = Column(Boolean, default=False)
-    created_at = Column(TIMESTAMP(timezone=True), default='CURRENT_TIMESTAMP')
-    updated_at = Column(TIMESTAMP(timezone=True), default='CURRENT_TIMESTAMP', onupdate='CURRENT_TIMESTAMP')
+    created_at = Column(TIMESTAMP(timezone=True), default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
     
     # Relationship to user
     user: Mapped["User"] = relationship(back_populates="alarms")
