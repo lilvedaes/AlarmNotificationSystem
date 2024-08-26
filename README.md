@@ -4,9 +4,8 @@ The Alarm Notification System is a FastAPI-based application that allows users t
 
 ## Features
 - User-Configurable Notifications: Users can set multiple alarms with specific times, days, and notification methods (email, SMS, or both).
-- Time-Zone Support: Notifications are sent according to the user's time zone.
 - Scheduled Notifications: Notifications are processed using Celery and scheduled with APScheduler.
-- AWS Integration: Uses AWS SNS for sending notifications and DynamoDB for logging.
+- AWS Integration: Uses AWS SNS for sending notifications and DynamoDB for logging. Uses SQS for event queueing and polling.
 - Dockerized: The application is fully containerized using Docker.
 
 ## Setup and Installation

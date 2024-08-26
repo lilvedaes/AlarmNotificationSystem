@@ -14,10 +14,9 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
-    alarms: List['Alarm'] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Alarm Schemas
 class AlarmBase(BaseModel):
@@ -37,4 +36,4 @@ class Alarm(AlarmBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -1,9 +1,9 @@
 from datetime import datetime
 import boto3
-from app.models import Alarm
-from app.schemas import AlarmCreate
-from app.scheduler import schedule_alarm
-from app import settings
+# from app.models import Alarm
+# from app.schemas import AlarmCreate
+# from app.scheduler import schedule_alarm
+# from app.config import settings
 
 dynamodb = boto3.resource('dynamodb')
 sns = boto3.client('sns')
@@ -12,18 +12,19 @@ notification_log_table = dynamodb.Table('NotificationLogs')
 events_table = dynamodb.Table('Events')
 
 def send_sns_notification(event):
-    if event.get('send_sms'):
-        sns.publish(
-            PhoneNumber=event['phone_number'],
-            Message=event['message'],
-        )
-    if event.get('send_email'):
-        sns.publish(
-            TopicArn=settings.sns_topic_arn,
-            Message=event['message'],
-            Subject='Alarm Notification',
-        )
-    log_notification_to_dynamodb(event)
+    # if event.get('send_sms'):
+    #     sns.publish(
+    #         PhoneNumber=event['phone_number'],
+    #         Message=event['message'],
+    #     )
+    # if event.get('send_email'):
+    #     sns.publish(
+    #         TopicArn=settings.sns_topic_arn,
+    #         Message=event['message'],
+    #         Subject='Alarm Notification',
+    #     )
+    # log_notification_to_dynamodb(event)
+    pass
 
 def log_notification_to_dynamodb(event):
     notification_log_table.put_item(
@@ -52,24 +53,27 @@ def log_event_to_dynamodb(event):
     )
 
 def create_sqs_message(event):
-    sqs.send_message(
-        QueueUrl=settings.sqs_queue_url,
-        MessageBody=str(event)
-    )
+    # sqs.send_message(
+    #     QueueUrl=settings.sqs_queue_url,
+    #     MessageBody=str(event)
+    # )
+    pass
 
 def poll_sqs_queue():
-    response = sqs.receive_message(
-        QueueUrl=settings.sqs_queue_url,
-        MaxNumberOfMessages=10
-    )
-    for message in response.get('Messages', []):
-        event = eval(message['Body'])  # Assuming message body is a stringified dict
-        process_event(event)
-        sqs.delete_message(
-            QueueUrl=settings.sqs_queue_url,
-            ReceiptHandle=message['ReceiptHandle']
-        )
+    # response = sqs.receive_message(
+    #     QueueUrl=settings.sqs_queue_url,
+    #     MaxNumberOfMessages=10
+    # )
+    # for message in response.get('Messages', []):
+    #     event = eval(message['Body'])  # Assuming message body is a stringified dict
+    #     # process_event(event)
+    #     sqs.delete_message(
+    #         QueueUrl=settings.sqs_queue_url,
+    #         ReceiptHandle=message['ReceiptHandle']
+    #     )
+    pass
 
-def process_event(event):
-    schedule_alarm(AlarmCreate(**event))
-    log_event_to_dynamodb(event)
+# probably go somewhere else
+# def process_event(event):
+#     schedule_alarm(AlarmCreate(**event))
+#     log_event_to_dynamodb(event)

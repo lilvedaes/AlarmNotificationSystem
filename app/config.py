@@ -1,6 +1,6 @@
 # app/config.py
 
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     database_url: str
@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     sns_topic_arn: str
     celery_broker_url: str
     celery_result_backend: str
+    postgres_user: str
+    postgres_password: str
+    postgres_db: str
+    postgres_host: str
+    postgres_port: str
     postgres_tz: str
 
     class Config:

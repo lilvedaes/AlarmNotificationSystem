@@ -2,9 +2,14 @@ alembic
 boto3
 fastapi[standard]
 pydantic
+pydantic-settings
 sqlalchemy
 uvicorn
 urllib3
 python-dotenv
 psycopg2
 pytz
+apscheduler
+celery
+asyncpg
+redis

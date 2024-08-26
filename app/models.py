@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, Text, Time, Boolean, ForeignKey, ARRAY, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped
+from typing import List
 
 Base = declarative_base()
 
@@ -14,7 +16,7 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True), default='CURRENT_TIMESTAMP')
     
     # Relationship to alarms
-    alarms = relationship("Alarm", back_populates="user")
+    alarms: Mapped[List["Alarm"]] = relationship(back_populates="user")
 
 class Alarm(Base):
     __tablename__ = 'alarms'
@@ -30,5 +32,5 @@ class Alarm(Base):
     created_at = Column(TIMESTAMP(timezone=True), default='CURRENT_TIMESTAMP')
     updated_at = Column(TIMESTAMP(timezone=True), default='CURRENT_TIMESTAMP', onupdate='CURRENT_TIMESTAMP')
     
-    # Relationship to users
-    user = relationship("User", back_populates="alarms")
+    # Relationship to user
+    user: Mapped["User"] = relationship(back_populates="alarms")
