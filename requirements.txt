@@ -9,33 +9,69 @@ alembic==1.13.2
 annotated-types==0.7.0
     # via pydantic
 anyio==4.4.0
-    # via starlette
+    # via
+    #   httpx
+    #   starlette
+    #   watchfiles
 boto3==1.28.20
     # via -r requirements.in
 botocore==1.31.85
     # via
     #   boto3
     #   s3transfer
+certifi==2024.7.4
+    # via
+    #   httpcore
+    #   httpx
 click==8.1.7
-    # via uvicorn
+    # via
+    #   typer
+    #   uvicorn
 colorama==0.4.6
-    # via click
-fastapi==0.112.2
+    # via
+    #   click
+    #   uvicorn
+dnspython==2.6.1
+    # via email-validator
+email-validator==2.2.0
+    # via fastapi
+fastapi[standard]==0.112.2
     # via -r requirements.in
+fastapi-cli[standard]==0.0.5
+    # via fastapi
 greenlet==3.0.3
     # via sqlalchemy
 h11==0.14.0
+    # via
+    #   httpcore
+    #   uvicorn
+httpcore==1.0.5
+    # via httpx
+httptools==0.6.1
     # via uvicorn
+httpx==0.27.0
+    # via fastapi
 idna==3.8
-    # via anyio
+    # via
+    #   anyio
+    #   email-validator
+    #   httpx
+jinja2==3.1.4
+    # via fastapi
 jmespath==1.0.1
     # via
     #   boto3
     #   botocore
 mako==1.3.5
     # via alembic
+markdown-it-py==3.0.0
+    # via rich
 markupsafe==2.1.5
-    # via mako
+    # via
+    #   jinja2
+    #   mako
+mdurl==0.1.2
+    # via markdown-it-py
 psycopg2==2.9.9
     # via -r requirements.in
 pydantic==2.8.2
@@ -44,22 +80,38 @@ pydantic==2.8.2
     #   fastapi
 pydantic-core==2.20.1
     # via pydantic
+pygments==2.18.0
+    # via rich
 python-dateutil==2.9.0.post0
     # via botocore
 python-dotenv==1.0.1
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   uvicorn
+python-multipart==0.0.9
+    # via fastapi
+pyyaml==6.0.2
+    # via uvicorn
+rich==13.8.0
+    # via typer
 s3transfer==0.6.2
     # via boto3
+shellingham==1.5.4
+    # via typer
 six==1.16.0
     # via python-dateutil
 sniffio==1.3.1
-    # via anyio
+    # via
+    #   anyio
+    #   httpx
 sqlalchemy==2.0.32
     # via
     #   -r requirements.in
     #   alembic
 starlette==0.38.2
     # via fastapi
+typer==0.12.5
+    # via fastapi-cli
 typing-extensions==4.12.2
     # via
     #   alembic
@@ -67,9 +119,17 @@ typing-extensions==4.12.2
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
+    #   typer
 urllib3==1.26.16
     # via
     #   -r requirements.in
     #   botocore
-uvicorn==0.30.6
-    # via -r requirements.in
+uvicorn[standard]==0.30.6
+    # via
+    #   -r requirements.in
+    #   fastapi
+    #   fastapi-cli
+watchfiles==0.23.0
+    # via uvicorn
+websockets==13.0
+    # via uvicorn

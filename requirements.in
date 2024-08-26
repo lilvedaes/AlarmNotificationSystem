@@ -1,6 +1,6 @@
 alembic
 boto3
-fastapi
+fastapi[standard]
 pydantic
 sqlalchemy
 uvicorn
