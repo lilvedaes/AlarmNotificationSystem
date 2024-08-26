@@ -19,7 +19,7 @@ def send_sns_notification(event):
         )
     if event.get('send_email'):
         sns.publish(
-            TopicArn='your_sns_topic_arn',  # Replace with actual ARN
+            TopicArn=settings.sns_topic_arn,
             Message=event['message'],
             Subject='Alarm Notification',
         )

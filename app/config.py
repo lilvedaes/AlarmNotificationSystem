@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     aws_access_key_id: str
     aws_secret_access_key: str
     aws_region: str
+    sqs_queue_url: str
+    sns_topic_arn: str
     celery_broker_url: str
     celery_result_backend: str
     postgres_tz: str

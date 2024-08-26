@@ -84,17 +84,22 @@ In Docker, thanks to the command in the web container, the migrations are applie
 Your .env file should contain the following environment variables:
 
 ```plaintext
-DATABASE_URL=postgresql+asyncpg://user:password@localhost/dbname
+DATABASE_URL=postgresql+asyncpg://user:password@host/database
+POSTGRES_USER=user
+POSTGRES_PASSWORD=password
+POSTGRES_DB=database
+POSTGRES_HOST=host
+POSTGRES_PORT=5432
+POSTGRES_TZ=Timezone
+
 AWS_ACCESS_KEY_ID=your-access-key-id
 AWS_SECRET_ACCESS_KEY=your-secret-access-key
-AWS_REGION=us-east-1
+AWS_REGION=your-region
+SQS_QUEUE_URL=https://sqs.your-region.amazonaws.com/your-account-id/your-queue-name
+SNS_TOPIC_ARN=arn:aws:sns:your-region:your-account-id:your-topic-name
+
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
-POSTGRES_USER=your-db-user
-POSTGRES_PASSWORD=your-db-password
-POSTGRES_DB=your-db-name
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
 ```
 
 ## Docker Setup
