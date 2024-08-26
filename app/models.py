@@ -11,7 +11,6 @@ class User(Base):
     username = Column(String(50), nullable=False, unique=True)
     email = Column(String(255), nullable=False)
     phone_number = Column(String(20), nullable=False)
-    timezone = Column(String(50), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), default='CURRENT_TIMESTAMP')
     
     # Relationship to alarms

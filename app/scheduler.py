@@ -1,17 +1,16 @@
-# app/scheduler.py
-
 from apscheduler.schedulers.background import BackgroundScheduler
+from app.celery_config import send_notification
 from datetime import datetime, timedelta
+from app import settings
 import pytz
 
 scheduler = BackgroundScheduler()
 
-def send_alarm_notification(alarm_id, user_id, message):
-    from app.celery_config import send_notification
-    send_notification.delay(alarm_id, user_id, message)
+def send_alarm_notification(event):
+    send_notification.delay(event)
 
 def schedule_alarm(alarm):
-    timezone = pytz.timezone(alarm.timezone)
+    timezone = pytz.timezone(settings.postgres_tz)
     now = datetime.now(timezone)
     scheduled_time = datetime.combine(now.date(), alarm.time)
     
@@ -22,7 +21,7 @@ def schedule_alarm(alarm):
         send_alarm_notification,
         'date',
         run_date=scheduled_time,
-        args=[alarm.id, alarm.user_id, alarm.message]
+        args=[alarm.dict()]
     )
 
 def start_scheduler():

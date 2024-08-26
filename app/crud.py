@@ -1,14 +1,16 @@
 from sqlalchemy.orm import Session
 from app import models, schemas
 
-# List of valid timezones
-
 # User CRUD operations
 def get_user_by_username(db: Session, username: str):
     return db.query(models.User).filter(models.User.username == username).first()
 
 def create_user(db: Session, user: schemas.UserCreate):
-    db_user = models.User(**user.dict())
+    db_user = models.User(
+        username=user.username,
+        email=user.email,
+        phone_number=user.phone_number,
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -26,8 +28,7 @@ def create_alarm(db: Session, alarm: schemas.AlarmCreate, user: models.User):
         days_of_week=alarm.days_of_week,
         is_active=alarm.is_active,
         send_sms=alarm.send_sms,
-        send_email=alarm.send_email,
-        timezone=user.timezone  # Use the user's timezone
+        send_email=alarm.send_email
     )
     db.add(db_alarm)
     db.commit()

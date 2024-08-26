@@ -1,4 +1,5 @@
 import pytz
+from app.scheduler import start_scheduler
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -20,9 +21,7 @@ def get_db():
 
 @app.on_event("startup")
 async def startup_event():
-    # Initialize the scheduler if needed
-    # start_scheduler()  # Uncomment if scheduler is implemented
-    pass
+    start_scheduler()
 
 @app.get("/")
 def read_root():
@@ -34,10 +33,6 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_username(db, username=user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-    
-    # Validate timezone
-    if user.timezone not in pytz.all_timezones:
-        raise HTTPException(status_code=400, detail="Invalid timezone")
     
     return crud.create_user(db=db, user=user)
 
@@ -71,3 +66,12 @@ def get_alarms_by_username(username: str, db: Session = Depends(get_db)):
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     return crud.get_alarms_by_user(db=db, user_id=db_user.id)
+
+# Delete alarm
+@app.delete("/alarms/{alarm_id}")
+def delete_alarm(alarm_id: int, db: Session = Depends(get_db)):
+    db_alarm = crud.get_alarm(db, alarm_id=alarm_id)
+    if not db_alarm:
+        raise HTTPException(status_code=404, detail="Alarm not found")
+    crud.delete_alarm(db, alarm_id=alarm_id)
+    return {"message": "Alarm deleted successfully"}

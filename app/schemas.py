@@ -7,7 +7,6 @@ class UserBase(BaseModel):
     username: constr(max_length=50)
     email: EmailStr
     phone_number: constr(max_length=20)
-    timezone: constr(max_length=50)
 
 # UserCreate will include all UserBase fields
 class UserCreate(UserBase):

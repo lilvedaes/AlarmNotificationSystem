@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     aws_region: str
     celery_broker_url: str
     celery_result_backend: str
+    postgres_tz: str
 
     class Config:
         env_file = ".env"
