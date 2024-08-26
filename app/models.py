@@ -25,7 +25,6 @@ class Alarm(Base):
     message = Column(Text, nullable=False)
     time = Column(Time, nullable=False)
     days_of_week = Column(ARRAY(Integer), nullable=False)  # Days of the week array Monday = 0, Sunday = 6
-    timezone = Column(String(50), nullable=False)
     is_active = Column(Boolean, default=True)
     send_sms = Column(Boolean, default=False)
     send_email = Column(Boolean, default=False)
