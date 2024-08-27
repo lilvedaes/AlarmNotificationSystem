@@ -41,7 +41,8 @@ def schedule_alarm(
     
     # Schedule the Celery task using APScheduler
     scheduler.add_job(
-        func=notification_function.s(event),
+        func=notification_function,
+        args=[event],
         trigger=trigger,
         id=f"alarm_{contact_key}_{alarm.id}",
         replace_existing=True

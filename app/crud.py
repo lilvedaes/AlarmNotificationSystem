@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app import models, schemas
-from app.celery_config import send_sms_notification, send_email_notification
+#from app.celery_config import send_sms_notification, send_email_notification
+from app.aws_utils import send_sns_sms_notification, send_sns_email_notification
 from app.scheduler import schedule_alarm
 
 # Set up logging
@@ -70,14 +71,14 @@ def create_alarm(db: Session, alarm: schemas.AlarmCreate, user: schemas.User) ->
             try:
                 if alarm_schema.send_sms:
                     schedule_alarm(
-                        notification_function=send_sms_notification, 
+                        notification_function=send_sns_sms_notification, 
                         contact_info=user.phone_number, 
                         contact_key='phone_number', 
                         alarm=alarm_schema
                     )
                 if alarm_schema.send_email:
                     schedule_alarm(
-                        notification_function=send_email_notification, 
+                        notification_function=send_sns_email_notification, 
                         contact_info=user.email, 
                         contact_key='email', 
                         alarm=alarm_schema
