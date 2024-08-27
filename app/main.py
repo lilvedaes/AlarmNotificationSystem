@@ -37,12 +37,11 @@ app = FastAPI(lifespan=lifespan)
 # When specifying response model as a schema, it runs schema validation and throws RequestValidationError if failed
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(exc: RequestValidationError):
-    logger.error(f"Validation error occurred: {exc.errors()} with body: {exc.body}")
+    logger.error(f"Validation error occurred: {exc.errors()}")
     return JSONResponse(
         status_code=400,
         content={
-            "detail": exc.errors(),
-            "body": exc.body
+            "detail": exc.errors()
         }
     )
 
