@@ -83,7 +83,7 @@ In Docker, thanks to the command in the web container, the migrations are applie
 Your .env file should contain the following environment variables:
 
 ```plaintext
-DATABASE_URL=postgresql+asyncpg://user:password@host/database
+DATABASE_URL=postgresql://user:password@host/database
 POSTGRES_USER=user
 POSTGRES_PASSWORD=password
 POSTGRES_DB=database
@@ -101,7 +101,7 @@ CELERY_RESULT_BACKEND=redis://redis:6379/0
 ```
 
 Note:
-- DATABASE_URL should be an asyncpg url
+- DATABASE_URL should NOT be an async url
 - The TIMEZONE will define what timezone your app will run in
 - The values for CELERY_BROKER_URL and CELERY_RESULT_BACKEND work as they are
 

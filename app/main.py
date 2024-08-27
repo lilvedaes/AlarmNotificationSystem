@@ -1,9 +1,9 @@
 import logging
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.concurrency import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from contextlib import asynccontextmanager
+from sqlalchemy.orm import Session
 from typing import List
 
 from app import models, schemas, crud
@@ -18,24 +18,16 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# Asynchronous version of creating all tables (only necessary if not using Alembic for migrations)
-async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(models.Base.metadata.create_all)
-
-# Dependency to get the async DB session
-async def get_db():
-    async with SessionLocal() as db:
-        try:
-            # Use yield to "suspend" execution instead of "return" 
-            # so that the session closes after the request is done
-            yield db
-        finally:
-            await db.close()
+# Dependency to get the synchronous DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()  # Ensure the DB is initialized
     start_scheduler()  # Start the scheduler as usual
     yield
 
@@ -55,25 +47,25 @@ async def validation_exception_handler(exc: RequestValidationError):
     )
 
 @app.get("/")
-async def read_root():
+def read_root():
     return {"message": "Welcome to the Alarm Notification System!"}
 
 # Create user
 @app.post("/users/", response_model=schemas.User)
-async def create_user(user: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
-    db_user = await crud.get_user_by_username(db, username=user.username)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_username(db, username=user.username)
     if db_user:
         logger.warning(f"Username '{user.username}' already registered")
         raise HTTPException(status_code=400, detail="Username already registered")
     
-    created_user = await crud.create_user(db=db, user=user)
+    created_user = crud.create_user(db=db, user=user)
     logger.info(f"User '{user.username}' created successfully")
     return created_user
 
 # Get user by username
 @app.get("/users/{username}", response_model=schemas.User)
-async def get_user(username: str, db: AsyncSession = Depends(get_db)):
-    db_user = await crud.get_user_by_username(db, username=username)
+def get_user(username: str, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_username(db, username=username)
     if db_user is None:
         logger.warning(f"User with username '{username}' not found")
         raise HTTPException(status_code=404, detail="User not found")
@@ -82,8 +74,8 @@ async def get_user(username: str, db: AsyncSession = Depends(get_db)):
 
 # Create alarm
 @app.post("/alarms/", response_model=schemas.Alarm)
-async def create_alarm(alarm: schemas.AlarmCreate, db: AsyncSession = Depends(get_db)):
-    db_user = await crud.get_user_by_username(db, username=alarm.username)
+def create_alarm(alarm: schemas.AlarmCreate, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_username(db, username=alarm.username)
     if not db_user:
         logger.warning(f"User with username '{alarm.username}' not found")
         raise HTTPException(status_code=404, detail="User not found")
@@ -99,30 +91,30 @@ async def create_alarm(alarm: schemas.AlarmCreate, db: AsyncSession = Depends(ge
         logger.warning(f"Alarm creation failed for '{alarm.username}': Both send_email and send_sms are False")
         raise HTTPException(status_code=400, detail="At least one of send_email or send_sms must be True")
     
-    created_alarm = await crud.create_alarm(db=db, alarm=alarm, user=db_user)
+    created_alarm = crud.create_alarm(db=db, alarm=alarm, user=db_user)
     logger.info(f"Alarm with ID '{created_alarm.id}' created successfully for user '{alarm.username}'")
     return created_alarm
 
 # Get alarms by username
 @app.get("/alarms/user/{username}", response_model=List[schemas.Alarm])
-async def get_alarms_by_username(username: str, db: AsyncSession = Depends(get_db)):
-    db_user = await crud.get_user_by_username(db, username=username)
+def get_alarms_by_username(username: str, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_username(db, username=username)
     if not db_user:
         logger.warning(f"User with username '{username}' not found")
         raise HTTPException(status_code=404, detail="User not found")
     
-    alarms = await crud.get_alarms_by_user(db=db, user_id=db_user.id)
+    alarms = crud.get_alarms_by_user(db=db, user_id=db_user.id)
     logger.info(f"Fetched {len(alarms)} alarms for user '{username}'")
     return alarms
 
 # Delete alarm
 @app.delete("/alarms/{alarm_id}")
-async def delete_alarm(alarm_id: int, db: AsyncSession = Depends(get_db)):
-    db_alarm = await crud.get_alarm(db, alarm_id=alarm_id)
+def delete_alarm(alarm_id: int, db: Session = Depends(get_db)):
+    db_alarm = crud.get_alarm(db, alarm_id=alarm_id)
     if not db_alarm:
         logger.warning(f"Alarm with ID '{alarm_id}' not found")
         raise HTTPException(status_code=404, detail="Alarm not found")
     
-    await crud.delete_alarm(db, alarm_id=alarm_id)
+    crud.delete_alarm(db, alarm_id=alarm_id)
     logger.info(f"Alarm with ID '{alarm_id}' deleted successfully")
     return {"message": "Alarm deleted successfully"}

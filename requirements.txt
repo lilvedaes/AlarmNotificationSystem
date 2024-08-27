@@ -17,10 +17,6 @@ anyio==4.4.0
     #   watchfiles
 apscheduler==3.10.4
     # via -r requirements.in
-async-timeout==4.0.3
-    # via asyncpg
-asyncpg==0.29.0
-    # via -r requirements.in
 billiard==4.2.0
     # via celery
 boto3==1.28.20

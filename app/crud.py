@@ -1,6 +1,7 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select, delete
+from typing import List
+from sqlalchemy.orm import Session
+from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app import models, schemas
 from app.celery_config import send_sms_notification, send_email_notification
@@ -10,15 +11,15 @@ from app.scheduler import schedule_alarm
 logger = logging.getLogger(__name__)
 
 # User CRUD operations
-async def get_user_by_username(db: AsyncSession, username: str) -> schemas.User | None:
+def get_user_by_username(db: Session, username: str) -> schemas.User:
     try:
-        result = await db.execute(select(models.User).filter(models.User.username == username))
+        result = db.execute(select(models.User).filter(models.User.username == username))
         return result.scalars().first()
     except SQLAlchemyError as e:
         logger.error(f"Error fetching user by username '{username}': {e}")
         raise
 
-async def create_user(db: AsyncSession, user: schemas.UserCreate) -> schemas.User:
+def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
     try:
         db_user = models.User(
             username=user.username,
@@ -26,26 +27,26 @@ async def create_user(db: AsyncSession, user: schemas.UserCreate) -> schemas.Use
             phone_number=user.phone_number,
         )
         db.add(db_user)
-        await db.commit()
-        await db.refresh(db_user)
+        db.commit()
+        db.refresh(db_user)
         return schemas.User.model_validate(db_user)
     except SQLAlchemyError as e:
         logger.error(f"Error creating user '{user.username}': {e}")
         raise
     except ValueError as e:
-            logger.error(f"Validation error for user creation: {e}")
-            raise
+        logger.error(f"Validation error for user creation: {e}")
+        raise
 
 # Alarm CRUD operations
-async def get_alarm(db: AsyncSession, alarm_id: int) -> schemas.Alarm | None:
+def get_alarm(db: Session, alarm_id: int) -> schemas.Alarm:
     try:
-        result = await db.execute(select(models.Alarm).filter(models.Alarm.id == alarm_id))
+        result = db.execute(select(models.Alarm).filter(models.Alarm.id == alarm_id))
         return result.scalars().first()
     except SQLAlchemyError as e:
         logger.error(f"Error fetching alarm with ID '{alarm_id}': {e}")
         raise
 
-async def create_alarm(db: AsyncSession, alarm: schemas.AlarmCreate, user: schemas.User) -> schemas.Alarm:
+def create_alarm(db: Session, alarm: schemas.AlarmCreate, user: schemas.User) -> schemas.Alarm:
     try:
         # Add alarm to db
         db_alarm = models.Alarm(
@@ -58,8 +59,8 @@ async def create_alarm(db: AsyncSession, alarm: schemas.AlarmCreate, user: schem
             send_email=alarm.send_email
         )
         db.add(db_alarm)
-        await db.commit()
-        await db.refresh(db_alarm)
+        db.commit()
+        db.refresh(db_alarm)
 
         # Convert to schema
         alarm_schema = schemas.Alarm.model_validate(db_alarm)
@@ -93,18 +94,18 @@ async def create_alarm(db: AsyncSession, alarm: schemas.AlarmCreate, user: schem
         logger.error(f"Validation error for alarm creation: {e}")
         raise
 
-async def get_alarms_by_user(db: AsyncSession, user_id: int) -> list[schemas.Alarm]:
+def get_alarms_by_user(db: Session, user_id: int) -> List[schemas.Alarm]:
     try:
-        result = await db.execute(select(models.Alarm).filter(models.Alarm.user_id == user_id))
+        result = db.execute(select(models.Alarm).filter(models.Alarm.user_id == user_id))
         return result.scalars().all()
     except SQLAlchemyError as e:
         logger.error(f"Error fetching alarms for user ID '{user_id}': {e}")
         raise
 
-async def delete_alarm(db: AsyncSession, alarm_id: int) -> None:
+def delete_alarm(db: Session, alarm_id: int) -> None:
     try:
-        await db.execute(delete(models.Alarm).filter(models.Alarm.id == alarm_id))
-        await db.commit()
+        db.execute(delete(models.Alarm).filter(models.Alarm.id == alarm_id))
+        db.commit()
     except SQLAlchemyError as e:
         logger.error(f"Error deleting alarm with ID '{alarm_id}': {e}")
         raise

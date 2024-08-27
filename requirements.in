@@ -10,5 +10,4 @@ python-dotenv
 psycopg2
 apscheduler
 celery
-asyncpg
 redis

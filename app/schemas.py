@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr, constr, field_validator
+from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
 from typing import List, Optional
+from typing_extensions import Self
 from datetime import time
 
 # User Schemas
@@ -29,8 +30,9 @@ class AlarmBase(BaseModel):
     send_sms: Optional[bool] = False
 
     # Validate days of week is a non-empty list
-    @field_validator('days_of_week', always=True)
-    def check_days_of_week(cls, v):
+    @field_validator('days_of_week')
+    @classmethod
+    def check_days_of_week(cls, v: List[int]) -> List[int]:
         if not v:
             raise ValueError('Days of week must contain at least one element.')
         elif any(day < 0 or day > 6 for day in v):
@@ -38,13 +40,12 @@ class AlarmBase(BaseModel):
         return v
 
     # Validate that at least one of send_email or send_sms is True
-    @field_validator('send_email', 'send_sms', always=True)
-    def check_notification_flags(cls, v, values, field):
-        if field.name == 'send_email' and not v and not values.get('send_sms'):
+    @model_validator(mode='after')
+    @classmethod
+    def check_notification_flags(cls, self) -> Self:
+        if not self.send_email and not self.send_sms:
             raise ValueError('At least one of send_email or send_sms must be True.')
-        if field.name == 'send_sms' and not v and not values.get('send_email'):
-            raise ValueError('At least one of send_email or send_sms must be True.')
-        return v
+        return self
 
 # AlarmCreate will include all AlarmBase fields + username
 class AlarmCreate(AlarmBase):
