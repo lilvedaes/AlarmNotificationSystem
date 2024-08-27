@@ -1,5 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException
+import logging
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from contextlib import asynccontextmanager
 from typing import List
 
 from app import models, schemas, crud
@@ -12,19 +16,37 @@ async def init_db():
         await conn.run_sync(models.Base.metadata.create_all)
 
 # Dependency to get the async DB session
-async def get_db() -> AsyncSession:
+async def get_db():
     async with SessionLocal() as db:
         try:
+            # Use yield to "suspend" execution instead of "return" 
+            # so that the session closes after the request is done
             yield db
         finally:
             await db.close()
 
-app = FastAPI()
-
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     await init_db()  # Ensure the DB is initialized
     start_scheduler()  # Start the scheduler as usual
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+logger = logging.getLogger(__name__)
+
+# Create a custom exception handler for RequestValidationError to throw BAD REQUEST
+# When specifying response model as a schema, it runs schema validation and throws RequestValidationError if failed
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.error(f"Validation error occurred: {exc.errors()} for request body: {request.body}")
+    return JSONResponse(
+        status_code=400,
+        content={
+            "detail": exc.errors(),
+            "body": exc.body
+        }
+    )
 
 @app.get("/")
 async def read_root():
@@ -53,14 +75,8 @@ async def create_alarm(alarm: schemas.AlarmCreate, db: AsyncSession = Depends(ge
     db_user = await crud.get_user_by_username(db, username=alarm.username)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    alarm_data = schemas.AlarmCreate(**alarm.dict())
-
-    # Validate the days_of_week field
-    for day in alarm_data.days_of_week:
-        if day < 0 or day > 6:
-            raise HTTPException(status_code=400, detail="Invalid day of the week")
     
-    return await crud.create_alarm(db=db, alarm=alarm_data, user=db_user)
+    return await crud.create_alarm(db=db, alarm=alarm, user=db_user)
 
 # Get alarms by username
 @app.get("/alarms/user/{username}", response_model=List[schemas.Alarm])

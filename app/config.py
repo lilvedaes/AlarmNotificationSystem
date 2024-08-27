@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     aws_access_key_id: str
     aws_secret_access_key: str
     aws_region: str
-    sqs_queue_url: str
     sns_topic_arn: str
     celery_broker_url: str
     celery_result_backend: str
@@ -16,7 +15,7 @@ class Settings(BaseSettings):
     postgres_db: str
     postgres_host: str
     postgres_port: str
-    postgres_tz: str
+    timezone: str
 
     class Config:
         env_file = ".env"

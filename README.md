@@ -1,11 +1,11 @@
 # Alarm Notification System
 ## Overview
-The Alarm Notification System is a FastAPI-based application that allows users to schedule notifications (or "alarms") at specified times of day. Users can configure the notifications to be sent via email, SMS, or both, on specific days of the week. The system leverages AWS services (SNS, SQS, DynamoDB), Celery for background processing, and PostgreSQL for data storage.
+The Alarm Notification System is a FastAPI-based application that allows users to schedule notifications (or "alarms") at specified times of day. Users can configure the notifications to be sent via email, SMS, or both, on specific days of the week. The system leverages AWS services (SNS, DynamoDB), Celery for background processing, and PostgreSQL for data storage.
 
 ## Features
 - User-Configurable Notifications: Users can set multiple alarms with specific times, days, and notification methods (email, SMS, or both).
-- Scheduled Notifications: Notifications are processed using Celery and scheduled with APScheduler.
-- AWS Integration: Uses AWS SNS for sending notifications and DynamoDB for logging. Uses SQS for event queueing and polling.
+- Scheduled Notifications: Notifications scheduled with APScheduler and sent asynchronously with Celery.
+- AWS Integration: Uses AWS SNS for sending notifications and DynamoDB for logging.
 - Dockerized: The application is fully containerized using Docker.
 
 ## Setup and Installation
@@ -19,8 +19,8 @@ Ensure you have the following installed:
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/yourusername/alarm_notification_system.git
-cd alarm_notification_system
+git clone https://github.com/lilvedaes/AlarmNotificationSystem.git
+cd AlarmNotificationSystem
 ```
 
 ### Setup Virtual Environment
@@ -89,17 +89,21 @@ POSTGRES_PASSWORD=password
 POSTGRES_DB=database
 POSTGRES_HOST=host
 POSTGRES_PORT=5432
-POSTGRES_TZ=Timezone
+TIMEZONE=Timezone
 
 AWS_ACCESS_KEY_ID=your-access-key-id
 AWS_SECRET_ACCESS_KEY=your-secret-access-key
 AWS_REGION=your-region
-SQS_QUEUE_URL=https://sqs.your-region.amazonaws.com/your-account-id/your-queue-name
 SNS_TOPIC_ARN=arn:aws:sns:your-region:your-account-id:your-topic-name
 
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
 ```
+
+Note:
+- DATABASE_URL should be an asyncpg url
+- The TIMEZONE will define what timezone your app will run in
+- The values for CELERY_BROKER_URL and CELERY_RESULT_BACKEND work as they are
 
 ## Docker Setup
 ### Build and Run the Docker Containers
@@ -131,12 +135,14 @@ This project uses AWS SNS for sending notifications and DynamoDB for logging.
 
 ## Usage
 ### API Endpoints
-Here are some example API endpoints:
-- Create an Alarm: POST /alarms/
-- Get All Alarms: GET /alarms/
-- Update an Alarm: PUT /alarms/{alarm_id}
-- Delete an Alarm: DELETE /alarms/{alarm_id}
+The available API endpoints are:
+- Display welcome message: /
+- Create user: POST /users/
+- Get user by username: GET /users/{username}
+- Create alarm: POST /alarms/
+- Get alarms by username: GET /alarms/user/{username}
+- Delete alarm by alarm ID: DELETE /alarms/{alarm_id}
 
 ### Scheduling and Notifications
-- The system checks and schedules alarms every night at midnight.
-- Celery workers poll the SQS queue for events and trigger notifications using SNS based on the user's configuration.
+- The system checks and schedules alarms every 24 hours.
+- Celery has a task defined to send SNS notifications. We leverage Celery's async functions to make the sending of SNS notifications more scalable.

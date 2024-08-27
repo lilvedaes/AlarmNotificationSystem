@@ -1,31 +1,52 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-# from app.celery_config import send_notification
-from datetime import datetime, timedelta
-# from app.config import settings
-# import pytz
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.triggers.cron import CronTrigger
+from app import schemas
+from app.config import settings
+from app.constants import DAY_OF_WEEK_MAP
+from typing import Callable, Dict
 
-scheduler = BackgroundScheduler()
+# APScheduler setup
+jobstores = {
+    'default': SQLAlchemyJobStore(url=settings.database_url)
+}
+scheduler = BackgroundScheduler(jobstores=jobstores)
 
-# TODO: Figure out the delay, why is it needed?
-# def send_alarm_notification(event):
-#     send_notification.delay(event)
-
-# Schedule alarm to be sent at the specified time
-def schedule_alarm(alarm):
-    # timezone = pytz.timezone(settings.postgres_tz)
-    # now = datetime.now(timezone)
-    # scheduled_time = datetime.combine(now.date(), alarm.time)
+# Schedule alarm to be sent at the specified time through sms or email
+# Args:
+#   notification_function: The Celery task function to call.
+#   contact_info: The contact information (email or phone number).
+#   contact_key: The key in the event dictionary (either 'phone_number' or 'email').
+#   alarm: The alarm object containing scheduling details.
+def schedule_alarm(
+    notification_function: Callable[[Dict], None], 
+    contact_info: str, 
+    contact_key: str, 
+    alarm: schemas.Alarm
+):
+    # Create the CronTrigger with the correct day and time
+    day_of_week_str = ','.join(DAY_OF_WEEK_MAP[day] for day in alarm.days_of_week)
+    trigger = CronTrigger(
+        day_of_week=day_of_week_str, 
+        hour=alarm.time.hour, 
+        minute=alarm.time.minute, 
+        timezone=settings.timezone
+    )
     
-    # if scheduled_time < now:
-    #     scheduled_time += timedelta(days=1)
+    # Create the event dictionary
+    event = {
+        contact_key: contact_info,
+        **alarm.model_dump()
+    }
+    
+    # Schedule the Celery task using APScheduler
+    scheduler.add_job(
+        notification_function.s(event),
+        trigger=trigger,
+        id=f"alarm_{alarm.id}",
+        replace_existing=True
+    )
 
-    # scheduler.add_job(
-    #     send_alarm_notification,
-    #     'date',
-    #     run_date=scheduled_time,
-    #     args=[alarm.dict()]
-    # )
-    pass
-
+# Function to start scheduler from outside the module
 def start_scheduler():
     scheduler.start()
