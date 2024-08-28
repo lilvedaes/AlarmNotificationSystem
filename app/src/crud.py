@@ -3,9 +3,10 @@ from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
-from app import models, schemas
-from app.aws_utils import send_sns_sms_notification, send_sns_email_notification
-from app.scheduler import schedule_alarm
+from app.db import models
+from app.src import schemas
+from app.src.aws_utils import send_sns_sms_notification, send_sns_email_notification
+from app.src.scheduler import schedule_alarm
 
 # Set up logging
 logger = logging.getLogger(__name__)

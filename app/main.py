@@ -6,9 +6,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
 
-from app import models, schemas, crud
-from app.database import SessionLocal, engine
-from app.scheduler import start_scheduler
+from app.src import schemas, crud
+from app.db.database import SessionLocal
+from app.src.scheduler import start_scheduler
 
 # Set up logging
 logger = logging.getLogger(__name__)

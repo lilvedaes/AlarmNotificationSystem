@@ -1,9 +1,9 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.triggers.cron import CronTrigger
-from app import schemas
+from app.src import schemas
 from app.config import settings
-from app.constants import DAY_OF_WEEK_MAP
+from app.src.constants import DAY_OF_WEEK_MAP
 from typing import Callable, Dict
 
 # APScheduler setup
