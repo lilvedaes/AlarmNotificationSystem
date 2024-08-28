@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app import models, schemas
-#from app.celery_config import send_sms_notification, send_email_notification
 from app.aws_utils import send_sns_sms_notification, send_sns_email_notification
 from app.scheduler import schedule_alarm
 

@@ -14,7 +14,7 @@ scheduler = BackgroundScheduler(jobstores=jobstores)
 
 # Schedule alarm to be sent at the specified time through sms or email
 # Args:
-#   notification_function: The Celery task function to call.
+#   notification_function: The function to call.
 #   contact_info: The contact information (email or phone number).
 #   contact_key: The key in the event dictionary (either 'phone_number' or 'email').
 #   alarm: The alarm object containing scheduling details.
@@ -29,7 +29,8 @@ def schedule_alarm(
     trigger = CronTrigger(
         day_of_week=day_of_week_str, 
         hour=alarm.time.hour, 
-        minute=alarm.time.minute, 
+        minute=alarm.time.minute,
+        second=alarm.time.second,
         timezone=settings.timezone
     )
     
@@ -39,7 +40,7 @@ def schedule_alarm(
         **alarm.model_dump()
     }
     
-    # Schedule the Celery task using APScheduler
+    # Schedule the send notidication function using APScheduler
     scheduler.add_job(
         func=notification_function,
         args=[event],

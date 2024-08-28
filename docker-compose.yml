@@ -12,9 +12,10 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      - TZ=${TIMEZONE}
     depends_on:
       - db
-      - redis
 
   db:
     image: postgres:13
@@ -25,26 +26,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       PGTZ: ${TIMEZONE}
+      TZ: ${TIMEZONE}
     ports:
       - "5432:5432"
-    env_file:
-      - .env
-
-  redis:
-    image: redis:6
-    ports:
-      - "6379:6379"
-
-  celery:
-    build:
-      context: .
-      dockerfile: app/docker/Dockerfile
-    command: celery -A app.celery_config worker --loglevel=info
-    volumes:
-      - .:/app
-    depends_on:
-      - redis
-      - db
     env_file:
       - .env
 

@@ -1,10 +1,10 @@
 # Alarm Notification System
 ## Overview
-The Alarm Notification System is a FastAPI-based application that allows users to schedule notifications (or "alarms") at specified times of day. Users can configure the notifications to be sent via email, SMS, or both, on specific days of the week. The system leverages AWS services (SNS, DynamoDB), Celery for background processing, and PostgreSQL for data storage.
+The Alarm Notification System is a FastAPI-based application that allows users to schedule notifications (or "alarms") at specified times of day. Users can configure the notifications to be sent via email, SMS, or both, on specific days of the week. The system leverages AWS services (SNS, DynamoDB), and PostgreSQL for data storage.
 
 ## Features
 - User-Configurable Notifications: Users can set multiple alarms with specific times, days, and notification methods (email, SMS, or both).
-- Scheduled Notifications: Notifications scheduled with APScheduler and sent asynchronously with Celery.
+- Scheduled Notifications: Notifications scheduled with APScheduler.
 - AWS Integration: Uses AWS SNS for sending notifications and DynamoDB for logging.
 - Dockerized: The application is fully containerized using Docker.
 
@@ -60,7 +60,7 @@ Build and run the application using Docker Compose:
 docker-compose up --build
 ```
 
-This will start the FastAPI application, PostgreSQL, and Celery worker in separate containers.
+This will start the FastAPI application, and PostgreSQL in separate containers.
 
 ## Database Migrations
 To create and apply database migrations:
@@ -95,15 +95,11 @@ AWS_ACCESS_KEY_ID=your-access-key-id
 AWS_SECRET_ACCESS_KEY=your-secret-access-key
 AWS_REGION=your-region
 SNS_TOPIC_ARN=arn:aws:sns:your-region:your-account-id:your-topic-name
-
-CELERY_BROKER_URL=redis://redis:6379/0
-CELERY_RESULT_BACKEND=redis://redis:6379/0
 ```
 
 Note:
 - DATABASE_URL should NOT be an async url
 - The TIMEZONE will define what timezone your app will run in
-- The values for CELERY_BROKER_URL and CELERY_RESULT_BACKEND work as they are
 
 ## Docker Setup
 ### Build and Run the Docker Containers
@@ -116,7 +112,6 @@ docker-compose up --build
 This will:
 - Build the Docker image for the FastAPI application.
 - Set up the PostgreSQL database container.
-- Start the Celery worker for background processing.
 
 ### Accessing the Application
 Once the Docker containers are running, you can access the FastAPI application at:
@@ -144,5 +139,5 @@ The available API endpoints are:
 - Delete alarm by alarm ID: DELETE /alarms/{alarm_id}
 
 ### Scheduling and Notifications
-- The system checks and schedules alarms every 24 hours.
-- Celery has a task defined to send SNS notifications. We leverage Celery's async functions to make the sending of SNS notifications more scalable.
+- We use APSCheduler Job Storage to schedule the alarms when created
+- When the alarms are done, we send the SNS notifications

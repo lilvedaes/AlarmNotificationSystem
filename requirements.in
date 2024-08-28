@@ -9,5 +9,3 @@ urllib3
 python-dotenv
 psycopg2
 apscheduler
-celery
-redis

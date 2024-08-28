@@ -6,8 +6,6 @@ class Settings(BaseSettings):
     aws_secret_access_key: str
     aws_region: str
     sns_topic_arn: str
-    celery_broker_url: str
-    celery_result_backend: str
     postgres_user: str
     postgres_password: str
     postgres_db: str
