@@ -1,7 +1,8 @@
 from logging.config import fileConfig
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine
 from alembic import context
 from dotenv import load_dotenv
+from app.db.models import Base
 import os
 
 # Load environment variables from .env file
@@ -23,14 +24,9 @@ db_name = os.getenv("POSTGRES_DB")
 if not all([db_user, db_pass, db_host, db_port, db_name]):
     raise ValueError("Missing one or more environment variables")
 
-# Construct the database URL
+# Configure the database URL
 url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 config.set_main_option('sqlalchemy.url', url)
-
-# Import your models to get the MetaData object
-from app.models import Base  # Adjust import based on your actual structure
-
-# Set the target metadata for Alembic
 target_metadata = Base.metadata
 
 def run_migrations_offline():
