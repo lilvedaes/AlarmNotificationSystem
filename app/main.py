@@ -4,7 +4,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
-from app.crud import schemas, user_crud, alarm_crud, alarm_job_crud
+from app.crud import user_crud, alarm_crud, alarm_job_crud
+from app.schemas import user_schemas, alarm_schemas
 from app.db.database import SessionLocal
 from app.utils.scheduler import start_scheduler
 from app.utils.logger import logger
@@ -41,7 +42,7 @@ def read_root():
     return {"message": "Welcome to the Alarm Notification System!"}
 
 # Get user by username
-@app.get("/users/{username}", response_model=schemas.User)
+@app.get("/users/{username}", response_model=user_schemas.User)
 def get_user(username: str, db: Session = Depends(get_db)):
     db_user = user_crud.get_user_by_username(db, username)
     if db_user is None:
@@ -52,8 +53,8 @@ def get_user(username: str, db: Session = Depends(get_db)):
     return db_user
 
 # Create user
-@app.post("/users/", response_model=schemas.User)
-def create_user(user_create: schemas.UserCreate, db: Session = Depends(get_db)):
+@app.post("/users/", response_model=user_schemas.User)
+def create_user(user_create: user_schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = user_crud.get_user_by_username(db, user_create.username)
     if db_user:
         logger.warning(f"Username '{user_create.username}' already registered")
@@ -64,8 +65,8 @@ def create_user(user_create: schemas.UserCreate, db: Session = Depends(get_db)):
     return created_user
 
 # Update user by id
-@app.put("/users/{user_id}", response_model=schemas.User)
-def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Depends(get_db)):
+@app.put("/users/{user_id}", response_model=user_schemas.User)
+def update_user(user_id: int, user_update: user_schemas.UserUpdate, db: Session = Depends(get_db)):
     db_user = user_crud.get_user_by_id(db, user_id)
     if db_user is None:
         logger.warning(f"User with ID '{user_id}' not found")
@@ -96,7 +97,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"message": "User deleted successfully"}
 
 # Get alarms by username
-@app.get("/alarms/user/{username}", response_model=List[schemas.Alarm])
+@app.get("/alarms/user/{username}", response_model=List[alarm_schemas.Alarm])
 def get_alarms_by_username(username: str, db: Session = Depends(get_db)):
     db_user = user_crud.get_user_by_username(db, username)
     if not db_user:
@@ -108,8 +109,8 @@ def get_alarms_by_username(username: str, db: Session = Depends(get_db)):
     return alarms
 
 # Create alarm
-@app.post("/alarms/", response_model=schemas.Alarm)
-def create_alarm(alarm_create: schemas.AlarmCreate, db: Session = Depends(get_db)):
+@app.post("/alarms/", response_model=alarm_schemas.Alarm)
+def create_alarm(alarm_create: alarm_schemas.AlarmCreate, db: Session = Depends(get_db)):
     db_user = user_crud.get_user_by_username(db, alarm_create.username)
     if not db_user:
         logger.warning(f"User with username '{alarm_create.username}' not found")
@@ -125,8 +126,8 @@ def create_alarm(alarm_create: schemas.AlarmCreate, db: Session = Depends(get_db
     return created_alarm
 
 # Update alarm (activate/deactivate)
-@app.put("/alarms/{alarm_id}", response_model=schemas.Alarm)
-def update_alarm(alarm_id: int, alarm_update: schemas.AlarmUpdate, db: Session = Depends(get_db)):
+@app.put("/alarms/{alarm_id}", response_model=alarm_schemas.Alarm)
+def update_alarm(alarm_id: int, alarm_update: alarm_schemas.AlarmUpdate, db: Session = Depends(get_db)):
     db_alarm = alarm_crud.get_alarm_by_id(db, alarm_id)
     if not db_alarm:
         logger.warning(f"Alarm with ID '{alarm_id}' not found")

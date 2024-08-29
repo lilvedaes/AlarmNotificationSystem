@@ -1,7 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.triggers.cron import CronTrigger
-from app.crud import schemas
+from app.schemas import alarm_schemas
 from app.config import settings
 from app.utils.constants import DAY_OF_WEEK_MAP
 from typing import Callable, Dict
@@ -23,7 +23,7 @@ def schedule_alarm(
     notification_function: Callable[[Dict], None], 
     contact_info: str, 
     contact_key: str, 
-    alarm: schemas.Alarm
+    alarm: alarm_schemas.Alarm
 ):
     # Create the CronTrigger with the correct day and time
     day_of_week_str = ','.join(DAY_OF_WEEK_MAP[day] for day in alarm.days_of_week)

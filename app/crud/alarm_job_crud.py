@@ -2,11 +2,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app.db import models
-from app.crud import schemas
+from app.schemas import alarm_job_schemas
 from app.utils.logger import logger
 
 # AlarmJob CRUD operations
-def get_alarm_job_by_alarm_id(db: Session, alarm_id: int) -> schemas.AlarmJob:
+def get_alarm_job_by_alarm_id(db: Session, alarm_id: int) -> alarm_job_schemas.AlarmJob:
     try:
         result = db.execute(select(models.AlarmJob).filter(models.AlarmJob.alarm_id == alarm_id))
         return result.scalars().first()
@@ -17,7 +17,7 @@ def get_alarm_job_by_alarm_id(db: Session, alarm_id: int) -> schemas.AlarmJob:
         logger.error(f"Unexpected error fetching alarm job for alarm ID '{alarm_id}': {e}")
         raise
 
-def create_alarm_job(db: Session, alarm_job: schemas.AlarmJobCreate) -> schemas.AlarmJob:
+def create_alarm_job(db: Session, alarm_job: alarm_job_schemas.AlarmJobCreate) -> alarm_job_schemas.AlarmJob:
     try:
         db_alarm_job = models.AlarmJob(
             alarm_id=alarm_job.alarm_id,
@@ -27,7 +27,7 @@ def create_alarm_job(db: Session, alarm_job: schemas.AlarmJobCreate) -> schemas.
         db.add(db_alarm_job)
         db.commit()
         db.refresh(db_alarm_job)
-        return schemas.AlarmJob.model_validate(db_alarm_job)
+        return alarm_job_schemas.AlarmJob.model_validate(db_alarm_job)
     except SQLAlchemyError as e:
         db.rollback()  # Rollback in case of an error
         logger.error(f"Error creating alarm job for alarm '{alarm_job.alarm_id}': {e}")

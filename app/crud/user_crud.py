@@ -2,11 +2,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app.db import models
-from app.crud import schemas
+from app.schemas import user_schemas
 from app.utils.logger import logger
 
 # User CRUD operations
-def get_user_by_id(db: Session, id: int) -> schemas.User:
+def get_user_by_id(db: Session, id: int) -> user_schemas.User:
     try:
         result = db.execute(select(models.User).filter(models.User.id == id))
         return result.scalars().first()
@@ -17,7 +17,7 @@ def get_user_by_id(db: Session, id: int) -> schemas.User:
         logger.error(f"Unexpected error fetching user by id '{id}': {e}")
         raise
 
-def get_user_by_username(db: Session, username: str) -> schemas.User:
+def get_user_by_username(db: Session, username: str) -> user_schemas.User:
     try:
         result = db.execute(select(models.User).filter(models.User.username == username))
         return result.scalars().first()
@@ -28,7 +28,7 @@ def get_user_by_username(db: Session, username: str) -> schemas.User:
         logger.error(f"Unexpected error fetching user by username '{username}': {e}")
         raise
 
-def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
+def create_user(db: Session, user: user_schemas.UserCreate) -> user_schemas.User:
     try:
         db_user = models.User(
             username=user.username,
@@ -38,7 +38,7 @@ def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        return schemas.User.model_validate(db_user)
+        return user_schemas.User.model_validate(db_user)
     except SQLAlchemyError as e:
         db.rollback()  # Rollback in case of an error
         logger.error(f"Error creating user '{user.username}': {e}")
@@ -52,10 +52,10 @@ def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
         logger.error(f"Unexpected error creating user '{user.username}': {e}")
         raise
 
-def update_user(db: Session, user: schemas.User, user_update: schemas.UserUpdate) -> schemas.User:
+def update_user(db: Session, user: user_schemas.User, user_update: user_schemas.UserUpdate) -> user_schemas.User:
     try:
         # Validate schema
-        user = schemas.User.model_validate(user)
+        user = user_schemas.User.model_validate(user)
 
         # Update user
         if user_update.email:
