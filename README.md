@@ -1,11 +1,11 @@
 # Alarm Notification System
 ## Overview
-The Alarm Notification System is a FastAPI-based application that allows users to schedule notifications (or "alarms") at specified times of day. Users can configure the notifications to be sent via email, SMS, or both, on specific days of the week. The system leverages AWS services (SNS, DynamoDB), and PostgreSQL for data storage.
+The Alarm Notification System is a FastAPI-based application that allows users to schedule notifications (or "alarms") at specified times of day. Users can configure the notifications to be sent via email, SMS, or both, on specific days of the week. The system leverages AWS services (Pinpoint, End User Messaging, DynamoDB), and PostgreSQL for data storage.
 
 ## Features
 - User-Configurable Notifications: Users can set multiple alarms with specific times, days, and notification methods (email, SMS, or both).
 - Scheduled Notifications: Notifications scheduled with APScheduler.
-- AWS Integration: Uses AWS SNS for sending notifications and DynamoDB for logging.
+- AWS Integration: Uses AWS Pinpoint and AWS End User Messaging for sending notifications and DynamoDB for logging.
 - Dockerized: The application is fully containerized using Docker.
 
 ## Setup and Installation
@@ -94,7 +94,9 @@ TIMEZONE=Timezone
 AWS_ACCESS_KEY_ID=your-access-key-id
 AWS_SECRET_ACCESS_KEY=your-secret-access-key
 AWS_DEFAULT_REGION=your-region
-SNS_TOPIC_ARN=arn:aws:sns:your-region:your-account-id:your-topic-name
+
+END_USER_MESSAGING_SENDER_ID_ARN=arn-for-your-sender-ID
+PINPOINT_VERIFIED_EMAIL=email-verified-by-pinpoint
 ```
 
 Note:
@@ -126,19 +128,20 @@ Ensure that your AWS credentials are set up correctly in the .env file and that 
 aws configure
 ```
 
-This project uses AWS SNS for sending notifications and DynamoDB for logging.
-
 ## Usage
 ### API Endpoints
 The available API endpoints are:
 - Display welcome message: /
-- Create user: POST /users/
 - Get user by username: GET /users/{username}
-- Create alarm: POST /alarms/
+- Create user: POST /users/
+- Update user: PUT /users/{user_id}
+- Delete user: DELETE /users/{user_id}
 - Get alarms by username: GET /alarms/user/{username}
+- Create alarm: POST /alarms/
 - Update alarm by alarm ID: PUT /alarms/{alarm_id}
 - Delete alarm by alarm ID: DELETE /alarms/{alarm_id}
 
 ### Scheduling and Notifications
 - We use APSCheduler Job Storage to schedule the alarms when created
-- When the alarms are done, we send the SNS notifications
+- When the alarm is activated, the notification is sent using AWS Pinpoint and AWS End User Messaging
+- When the notification is sent, we log it into DynamoDB

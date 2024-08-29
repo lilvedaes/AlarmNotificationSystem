@@ -4,7 +4,7 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app.db import models
 from app.schemas import user_schemas, alarm_schemas, alarm_job_schemas
-from app.utils.aws_utils import send_sns_sms_notification, send_sns_email_notification
+from app.utils.aws_utils import send_pinpoint_sms_notification, send_pinpoint_email_notification
 from app.utils.scheduler import schedule_alarm, unschedule_alarm
 from app.utils.logger import logger
 
@@ -62,14 +62,14 @@ def create_alarm(
         if alarm.is_active:
             if alarm.send_sms:
                 sms_job_id = schedule_alarm(
-                    notification_function=send_sns_sms_notification, 
+                    notification_function=send_pinpoint_sms_notification, 
                     contact_info=user.phone_number, 
                     contact_key='phone_number', 
                     alarm=alarm
                 )
             if alarm.send_email:
                 email_job_id = schedule_alarm(
-                    notification_function=send_sns_email_notification, 
+                    notification_function=send_pinpoint_email_notification, 
                     contact_info=user.email, 
                     contact_key='email', 
                     alarm=alarm
@@ -125,14 +125,14 @@ def update_alarm(
             user = get_user_by_id_func(db, alarm.user_id)
             if alarm.send_sms:
                 sms_job_id = schedule_alarm(
-                    notification_function=send_sns_sms_notification, 
+                    notification_function=send_pinpoint_sms_notification, 
                     contact_info=user.phone_number, 
                     contact_key='phone_number', 
                     alarm=alarm
                 )
             if alarm.send_email:
                 email_job_id = schedule_alarm(
-                    notification_function=send_sns_email_notification, 
+                    notification_function=send_pinpoint_email_notification, 
                     contact_info=user.email, 
                     contact_key='email', 
                     alarm=alarm
