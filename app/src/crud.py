@@ -19,6 +19,9 @@ def get_user_by_id(db: Session, id: int) -> schemas.User:
     except SQLAlchemyError as e:
         logger.error(f"Error fetching user by id '{id}': {e}")
         raise
+    except Exception as e:
+        logger.error(f"Unexpected error fetching user by id '{id}': {e}")
+        raise
 
 def get_user_by_username(db: Session, username: str) -> schemas.User:
     try:
@@ -26,6 +29,9 @@ def get_user_by_username(db: Session, username: str) -> schemas.User:
         return result.scalars().first()
     except SQLAlchemyError as e:
         logger.error(f"Error fetching user by username '{username}': {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error fetching user by username '{username}': {e}")
         raise
 
 def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
@@ -44,7 +50,56 @@ def create_user(db: Session, user: schemas.UserCreate) -> schemas.User:
         logger.error(f"Error creating user '{user.username}': {e}")
         raise
     except ValueError as e:
+        db.rollback()
         logger.error(f"Validation error for user creation: {e}")
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error creating user '{user.username}': {e}")
+        raise
+
+def update_user(db: Session, user: schemas.User, user_update: schemas.UserUpdate) -> schemas.User:
+    try:
+        # Validate schema
+        user = schemas.User.model_validate(user)
+
+        # Update user
+        if user_update.email:
+            user.email = user_update.email
+        if user_update.phone_number:
+            user.phone_number = user_update.phone_number
+        db.commit()
+
+        return user
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Error updating user with ID '{user.id}': {e}")
+        raise
+    except ValueError as e:
+        logger.error(f"Validation error for user update: {e}")
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error updating user with ID '{user.id}': {e}")
+        raise
+
+def delete_user(db: Session, user_id: int) -> None:
+    try:
+        # Delete all related alarms
+        alarms = get_alarms_by_user(db, user_id)
+        for alarm in alarms:
+            delete_alarm(db, alarm.id)
+
+        # Delete the user
+        db.execute(delete(models.User).filter(models.User.id == user_id))
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Error deleting user with ID '{user_id}': {e}")
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error deleting user with ID '{user_id}': {e}")
         raise
 
 # AlarmJob CRUD operations
@@ -66,6 +121,10 @@ def create_alarm_job(db: Session, alarm_job: schemas.AlarmJobCreate) -> schemas.
     except ValueError as e:
         logger.error(f"Validation error for alarm job creation: {e}")
         raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error creating alarm job for alarm '{alarm_job.alarm_id}': {e}")
+        raise
 
 def get_alarm_job(db: Session, alarm_id: int) -> schemas.AlarmJob:
     try:
@@ -74,13 +133,21 @@ def get_alarm_job(db: Session, alarm_id: int) -> schemas.AlarmJob:
     except SQLAlchemyError as e:
         logger.error(f"Error fetching alarm job for alarm ID '{alarm_id}': {e}")
         raise
+    except Exception as e:
+        logger.error(f"Unexpected error fetching alarm job for alarm ID '{alarm_id}': {e}")
+        raise
 
 def delete_alarm_job(db: Session, alarm_id: int) -> None:
     try:
         db.execute(delete(models.AlarmJob).filter(models.AlarmJob.alarm_id == alarm_id))
         db.commit()
     except SQLAlchemyError as e:
+        db.rollback()
         logger.error(f"Error deleting alarm job with alarm ID '{alarm_id}': {e}")
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error deleting alarm job with alarm ID '{alarm_id}': {e}")
         raise
 
 # Alarm CRUD operations
@@ -90,6 +157,9 @@ def get_alarm(db: Session, alarm_id: int) -> schemas.Alarm:
         return result.scalars().first()
     except SQLAlchemyError as e:
         logger.error(f"Error fetching alarm with ID '{alarm_id}': {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error fetching alarm with ID '{alarm_id}': {e}")
         raise
 
 def create_alarm(db: Session, alarm_create: schemas.AlarmCreate, user: schemas.User) -> schemas.Alarm:
@@ -112,46 +182,43 @@ def create_alarm(db: Session, alarm_create: schemas.AlarmCreate, user: schemas.U
         alarm = schemas.Alarm.model_validate(db_alarm)
 
         # Schedule alarms with APScheduler
-        try:
-            sms_job_id = None
-            email_job_id = None
-            if alarm.is_active:
-                if alarm.send_sms:
-                    sms_job_id = schedule_alarm(
-                        notification_function=send_sns_sms_notification, 
-                        contact_info=user.phone_number, 
-                        contact_key='phone_number', 
-                        alarm=alarm
-                    )
-                if alarm.send_email:
-                    email_job_id = schedule_alarm(
-                        notification_function=send_sns_email_notification, 
-                        contact_info=user.email, 
-                        contact_key='email', 
-                        alarm=alarm
-                    )
+        sms_job_id = None
+        email_job_id = None
+        if alarm.is_active:
+            if alarm.send_sms:
+                sms_job_id = schedule_alarm(
+                    notification_function=send_sns_sms_notification, 
+                    contact_info=user.phone_number, 
+                    contact_key='phone_number', 
+                    alarm=alarm
+                )
+            if alarm.send_email:
+                email_job_id = schedule_alarm(
+                    notification_function=send_sns_email_notification, 
+                    contact_info=user.email, 
+                    contact_key='email', 
+                    alarm=alarm
+                )
 
-            # Creating alarm job in DB
-            create_alarm_job(db, schemas.AlarmJobCreate(
-                alarm_id=alarm.id,
-                sms_job_id=sms_job_id,
-                email_job_id=email_job_id
-            ))
-        except Exception as e:
-            # Rollback if there's an error during scheduling or creating alarm job
-            db.rollback()
-            logger.error(f"Error scheduling alarm '{db_alarm.id}' for user '{user.id}': {e}")
-            raise
+        # Creating alarm job in DB
+        create_alarm_job(db, schemas.AlarmJobCreate(
+            alarm_id=alarm.id,
+            sms_job_id=sms_job_id,
+            email_job_id=email_job_id
+        ))
 
         return alarm
 
     except SQLAlchemyError as e:
-        # Rollback on database-related errors
         db.rollback()
         logger.error(f"Error creating alarm for user '{user.id}': {e}")
         raise
     except ValueError as e:
         logger.error(f"Validation error for alarm creation: {e}")
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error occurred while creating alarm for user '{user.id}': {e}")
         raise
 
 def get_alarms_by_user(db: Session, user_id: int) -> List[schemas.Alarm]:
@@ -160,6 +227,10 @@ def get_alarms_by_user(db: Session, user_id: int) -> List[schemas.Alarm]:
         return result.scalars().all()
     except SQLAlchemyError as e:
         logger.error(f"Error fetching alarms for user ID '{user_id}': {e}")
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error occurred while getting alarms by user with ID '{user_id}': {e}")
         raise
 
 def update_alarm(db: Session, alarm: schemas.Alarm, alarm_update: schemas.AlarmUpdate) -> schemas.Alarm:
@@ -239,10 +310,10 @@ def delete_alarm(db: Session, alarm_id: int) -> None:
         db.commit()
 
     except SQLAlchemyError as e:
-        logger.error(f"Error deleting alarm with ID '{alarm_id}': {e}")
         db.rollback()
+        logger.error(f"Error deleting alarm with ID '{alarm_id}': {e}")
         raise
     except Exception as e:
-        logger.error(f"Unexpected error when deleting alarm with ID '{alarm_id}': {e}")
         db.rollback()
+        logger.error(f"Unexpected error when deleting alarm with ID '{alarm_id}': {e}")
         raise

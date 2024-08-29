@@ -13,6 +13,19 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     pass
 
+# UserUpdate will include only email and phone_number
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr]
+    phone_number: Optional[constr(max_length=20)]
+
+    # Validate that at least one of email or phone_number is provided
+    @model_validator(mode='after')
+    @classmethod
+    def check_contact_info(cls, self) -> Self:
+        if not self.email and not self.phone_number:
+            raise ValueError('At least one of email or phone_number must be provided.')
+        return self
+
 # The User schema will include all UserBase fields + id
 class User(UserBase):
     id: int

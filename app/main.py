@@ -71,6 +71,21 @@ def get_user(username: str, db: Session = Depends(get_db)):
     logger.info(f"User with username '{username}' fetched successfully")
     return db_user
 
+# Update user by id
+@app.put("/users/{user_id}", response_model=schemas.User)
+def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Depends(get_db)):
+    db_user = crud.get_user(db, user_id=user_id)
+    if db_user is None:
+        logger.warning(f"User with ID '{user_id}' not found")
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if db_user.phone_number == user_update.phone_number and db_user.email == user_update.email:
+        return db_user
+    
+    updated_user = crud.update_user(db, db_user, user_update)
+    logger.info(f"User with ID '{user_id}' updated successfully")
+    return updated_user
+
 # Create alarm
 @app.post("/alarms/", response_model=schemas.Alarm)
 def create_alarm(alarm: schemas.AlarmCreate, db: Session = Depends(get_db)):
