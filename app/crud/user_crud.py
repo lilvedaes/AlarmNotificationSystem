@@ -77,12 +77,12 @@ def update_user(db: Session, user: schemas.User, user_update: schemas.UserUpdate
         logger.error(f"Unexpected error updating user with ID '{user.id}': {e}")
         raise
 
-def delete_user(db: Session, user_id: int) -> None:
+def delete_user_by_id(db: Session, user_id: int, get_alarms_by_user_func, delete_alarm_func) -> None:
     try:
         # Delete all related alarms
-        alarms = get_alarms_by_user(db, user_id)
+        alarms = get_alarms_by_user_func(db, user_id)
         for alarm in alarms:
-            delete_alarm(db, alarm.id)
+            delete_alarm_func(db, alarm.id)
 
         # Delete the user
         db.execute(delete(models.User).filter(models.User.id == user_id))

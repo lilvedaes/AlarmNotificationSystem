@@ -6,6 +6,17 @@ from app.crud import schemas
 from app.utils.logger import logger
 
 # AlarmJob CRUD operations
+def get_alarm_job_by_alarm_id(db: Session, alarm_id: int) -> schemas.AlarmJob:
+    try:
+        result = db.execute(select(models.AlarmJob).filter(models.AlarmJob.alarm_id == alarm_id))
+        return result.scalars().first()
+    except SQLAlchemyError as e:
+        logger.error(f"Error fetching alarm job for alarm ID '{alarm_id}': {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error fetching alarm job for alarm ID '{alarm_id}': {e}")
+        raise
+
 def create_alarm_job(db: Session, alarm_job: schemas.AlarmJobCreate) -> schemas.AlarmJob:
     try:
         db_alarm_job = models.AlarmJob(
@@ -29,18 +40,7 @@ def create_alarm_job(db: Session, alarm_job: schemas.AlarmJobCreate) -> schemas.
         logger.error(f"Unexpected error creating alarm job for alarm '{alarm_job.alarm_id}': {e}")
         raise
 
-def get_alarm_job(db: Session, alarm_id: int) -> schemas.AlarmJob:
-    try:
-        result = db.execute(select(models.AlarmJob).filter(models.AlarmJob.alarm_id == alarm_id))
-        return result.scalars().first()
-    except SQLAlchemyError as e:
-        logger.error(f"Error fetching alarm job for alarm ID '{alarm_id}': {e}")
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error fetching alarm job for alarm ID '{alarm_id}': {e}")
-        raise
-
-def delete_alarm_job(db: Session, alarm_id: int) -> None:
+def delete_alarm_job_by_alarm_id(db: Session, alarm_id: int) -> None:
     try:
         db.execute(delete(models.AlarmJob).filter(models.AlarmJob.alarm_id == alarm_id))
         db.commit()
