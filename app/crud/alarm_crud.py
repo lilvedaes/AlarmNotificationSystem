@@ -1,6 +1,6 @@
 from typing import List
 from sqlalchemy.orm import Session
-from sqlalchemy import select, delete
+from sqlalchemy import select, update, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app.db import models
 from app.schemas import user_schemas, alarm_schemas, alarm_job_schemas
@@ -108,6 +108,12 @@ def update_alarm(
 
         # Update the alarm
         alarm.is_active = alarm_update.is_active
+
+        db.execute(
+            update(models.Alarm)
+            .where(models.Alarm.id == alarm.id)
+            .values(is_active=alarm.is_active)
+        )
         db.commit()
 
         sms_job_id = None
@@ -144,7 +150,7 @@ def update_alarm(
 
         # Update alarm job in DB
         db.execute(
-            models.AlarmJob.__table__.update()
+            update(models.AlarmJob)
             .where(models.AlarmJob.alarm_id == alarm.id)
             .values(sms_job_id=sms_job_id, email_job_id=email_job_id)
         )

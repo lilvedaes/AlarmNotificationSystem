@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select, delete
+from sqlalchemy import select, update, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app.db import models
 from app.schemas import user_schemas
@@ -62,6 +62,12 @@ def update_user(db: Session, user: user_schemas.User, user_update: user_schemas.
             user.email = user_update.email
         if user_update.phone_number:
             user.phone_number = user_update.phone_number
+
+        db.execute(
+            update(models.User)
+            .where(models.User.id == user.id)
+            .values(email=user.email, phone_number=user.phone_number)
+        )
         db.commit()
 
         return user
