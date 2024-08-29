@@ -1,4 +1,4 @@
-from app.utils.aws_utils import add_phone_number, get_verified_phone_numbers, remove_phone_number
+from app.utils.aws_utils import add_pinpoint_phone_number, get_pinpoint_verified_phone_numbers, remove_pinpoint_phone_number, send_pinpoint_verification_code, verify_pinpoint_phone_number
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update, delete
 from sqlalchemy.exc import SQLAlchemyError
@@ -43,12 +43,13 @@ def get_user_by_phone_number(db: Session, phone_number: str) -> user_schemas.Use
 def create_user(db: Session, user: user_schemas.UserCreate) -> user_schemas.User:
     try:
         # Check that you're below 10 verified phone numbers
-        aws_verified_phone_numbers = get_verified_phone_numbers()
+        aws_verified_phone_numbers = get_pinpoint_verified_phone_numbers()
         if len(aws_verified_phone_numbers) >= 10:
             raise ValueError("You have reached the maximum number of verified phone numbers")
         
         # Add phone number to Pinpoint
-        aws_phone_number_id = add_phone_number(user.phone_number)
+        aws_phone_number_id = add_pinpoint_phone_number(user.phone_number)
+        send_pinpoint_verification_code(aws_phone_number_id)
 
         # Add user to db
         db_user = models.User(
@@ -82,10 +83,19 @@ def update_user(db: Session, user: user_schemas.User, user_update: user_schemas.
         if user_update.username:
             user.username = user_update.username
         if user_update.phone_number:
-            # Delete old phone number from Pinpoint
-            remove_phone_number(user.aws_phone_number_id)
+            # Delete old number from Pinpoint if it exists
+            aws_verified_phone_numbers = get_pinpoint_verified_phone_numbers()
+            for phone_number in aws_verified_phone_numbers:
+                if phone_number['DestinationPhoneNumber'] == user.phone_number:
+                    remove_pinpoint_phone_number(user.aws_phone_number_id)
+
+            # Check that you're below 10 verified phone numbers
+            if len(aws_verified_phone_numbers) >= 10:
+                raise ValueError("You have reached the maximum number of verified phone numbers")
+
             # Add new phone number to Pinpoint
-            aws_phone_number_id = add_phone_number(user_update.phone_number)
+            aws_phone_number_id = add_pinpoint_phone_number(user_update.phone_number)
+            send_pinpoint_verification_code(aws_phone_number_id)
             user.phone_number = user_update.phone_number
             user.aws_phone_number_id = aws_phone_number_id
         db.execute(
@@ -110,8 +120,11 @@ def update_user(db: Session, user: user_schemas.User, user_update: user_schemas.
 
 def delete_user_by_id(db: Session, user: user_schemas.User, get_alarms_by_user_func, delete_alarm_func) -> None:
     try:
-        # Delete verified number from Pinpoint
-        remove_phone_number(user.aws_phone_number_id)
+        # Delete verified number from Pinpoint if it exists
+        verified_phone_numbers = get_pinpoint_verified_phone_numbers()
+        for phone_number in verified_phone_numbers:
+            if phone_number['DestinationPhoneNumber'] == user.phone_number:
+                remove_pinpoint_phone_number(user.aws_phone_number_id)
 
         # Delete all related alarms
         alarms = get_alarms_by_user_func(db, user.id)
@@ -128,4 +141,12 @@ def delete_user_by_id(db: Session, user: user_schemas.User, get_alarms_by_user_f
     except Exception as e:
         db.rollback()
         logger.error(f"Unexpected error deleting user with ID '{user.id}': {e}")
+        raise
+
+def verify_phone_number(aws_phone_number_id: str, verification_code: str) -> None:
+    try:
+        # Verify phone number
+        verify_pinpoint_phone_number(aws_phone_number_id, verification_code)
+    except Exception as e:
+        logger.error(f"Error verifying phone number: {e}")
         raise

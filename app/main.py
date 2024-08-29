@@ -82,13 +82,13 @@ def update_user(user_id: int, user_update: user_schemas.UserUpdate, db: Session 
     
     if user_update.username:
         user_with_new_username = user_crud.get_user_by_username(db, user_update.username)
-        if db_user:
+        if user_with_new_username:
             logger.warning(f"Username '{user_update.username}' already registered")
             raise HTTPException(status_code=400, detail="Username already registered")
     
     if user_update.phone_number:
         user_with_new_phone = user_crud.get_user_by_phone_number(db, user_update.phone_number)
-        if db_user:
+        if user_with_new_phone:
             logger.warning(f"Phone number '{user_update.phone_number}' already registered")
             raise HTTPException(status_code=400, detail="Phone number already registered")
     
@@ -112,6 +112,18 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     )
     logger.info(f"User with ID '{user_id}' deleted successfully")
     return {"message": "User deleted successfully"}
+
+# Verify user's phone number
+@app.post("/users/{username}/verify")
+def verify_phone_number(username: str, verification_code: str, db: Session = Depends(get_db)):
+    db_user = user_crud.get_user_by_username(db, username)
+    if db_user is None:
+        logger.warning(f"User with username '{username}' not found")
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_crud.verify_phone_number(db_user.aws_phone_number_id, verification_code)
+    logger.info(f"Phone number verified successfully for user '{username}'")
+    return {"message": "Phone number verified successfully"}
 
 # Get alarms by username
 @app.get("/alarms/user/{username}", response_model=List[alarm_schemas.Alarm])

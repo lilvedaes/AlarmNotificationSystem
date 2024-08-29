@@ -135,6 +135,7 @@ The available API endpoints are:
 - Create user: POST /users/
 - Update user: PUT /users/{user_id}
 - Delete user: DELETE /users/{user_id}
+- Verify user phone number: POST /users/{username}/verify
 - Get alarms by username: GET /alarms/user/{username}
 - Create alarm: POST /alarms/
 - Update alarm by alarm ID: PUT /alarms/{alarm_id}
