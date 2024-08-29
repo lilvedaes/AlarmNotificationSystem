@@ -12,7 +12,8 @@ class User(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), nullable=False, unique=True)
-    phone_number = Column(String(20), nullable=False)
+    phone_number = Column(String(20), nullable=False, unique=True)
+    aws_phone_number_id = Column(String(255), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     
     # Relationship to alarms

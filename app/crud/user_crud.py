@@ -1,3 +1,4 @@
+from app.utils.aws_utils import add_phone_number, get_verified_phone_numbers, remove_phone_number
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update, delete
 from sqlalchemy.exc import SQLAlchemyError
@@ -28,11 +29,32 @@ def get_user_by_username(db: Session, username: str) -> user_schemas.User:
         logger.error(f"Unexpected error fetching user by username '{username}': {e}")
         raise
 
+def get_user_by_phone_number(db: Session, phone_number: str) -> user_schemas.User:
+    try:
+        result = db.execute(select(models.User).filter(models.User.phone_number == phone_number))
+        return result.scalars().first()
+    except SQLAlchemyError as e:
+        logger.error(f"Error fetching user by id '{phone_number}': {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error fetching user by id '{phone_number}': {e}")
+        raise
+
 def create_user(db: Session, user: user_schemas.UserCreate) -> user_schemas.User:
     try:
+        # Check that you're below 10 verified phone numbers
+        aws_verified_phone_numbers = get_verified_phone_numbers()
+        if len(aws_verified_phone_numbers) >= 10:
+            raise ValueError("You have reached the maximum number of verified phone numbers")
+        
+        # Add phone number to Pinpoint
+        aws_phone_number_id = add_phone_number(user.phone_number)
+
+        # Add user to db
         db_user = models.User(
             username=user.username,
             phone_number=user.phone_number,
+            aws_phone_number_id=aws_phone_number_id,
         )
         db.add(db_user)
         db.commit()
@@ -57,11 +79,19 @@ def update_user(db: Session, user: user_schemas.User, user_update: user_schemas.
         user = user_schemas.User.model_validate(user)
 
         # Update user
-        user.phone_number = user_update.phone_number
+        if user_update.username:
+            user.username = user_update.username
+        if user_update.phone_number:
+            # Delete old phone number from Pinpoint
+            remove_phone_number(user.aws_phone_number_id)
+            # Add new phone number to Pinpoint
+            aws_phone_number_id = add_phone_number(user_update.phone_number)
+            user.phone_number = user_update.phone_number
+            user.aws_phone_number_id = aws_phone_number_id
         db.execute(
             update(models.User)
             .where(models.User.id == user.id)
-            .values(phone_number=user.phone_number)
+            .values(username=user.username, phone_number=user.phone_number, aws_phone_number_id=user.aws_phone_number_id)
         )
         db.commit()
 
@@ -78,21 +108,24 @@ def update_user(db: Session, user: user_schemas.User, user_update: user_schemas.
         logger.error(f"Unexpected error updating user with ID '{user.id}': {e}")
         raise
 
-def delete_user_by_id(db: Session, user_id: int, get_alarms_by_user_func, delete_alarm_func) -> None:
+def delete_user_by_id(db: Session, user: user_schemas.User, get_alarms_by_user_func, delete_alarm_func) -> None:
     try:
+        # Delete verified number from Pinpoint
+        remove_phone_number(user.aws_phone_number_id)
+
         # Delete all related alarms
-        alarms = get_alarms_by_user_func(db, user_id)
+        alarms = get_alarms_by_user_func(db, user.id)
         for alarm in alarms:
             delete_alarm_func(db, alarm.id)
 
         # Delete the user
-        db.execute(delete(models.User).filter(models.User.id == user_id))
+        db.execute(delete(models.User).filter(models.User.id == user.id))
         db.commit()
     except SQLAlchemyError as e:
         db.rollback()
-        logger.error(f"Error deleting user with ID '{user_id}': {e}")
+        logger.error(f"Error deleting user with ID '{user.id}': {e}")
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Unexpected error deleting user with ID '{user_id}': {e}")
+        logger.error(f"Unexpected error deleting user with ID '{user.id}': {e}")
         raise

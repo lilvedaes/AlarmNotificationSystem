@@ -1,3 +1,4 @@
+from typing import List
 import boto3
 from app.utils.logger import logger
 from app.config import settings
@@ -8,7 +9,42 @@ pinpoint_sms = boto3.client('pinpoint-sms-voice-v2')
 # dynamodb = boto3.resource('dynamodb')
 # notification_log_table = dynamodb.Table('NotificationLogs')
 
-def send_pinpoint_sms_notification(event):
+def get_verified_phone_numbers() -> List[dict]:
+    logger.info("Getting verified phone numbers from Pinpoint")
+    try:
+        response = pinpoint_sms.describe_verified_destination_numbers(
+            MaxResults=10
+        )
+        logger.info(f"Succcessfully retrieved {len(response['VerifiedDestinationNumbers'])} verified phone numbers from Pinpoint!")
+        return response['VerifiedDestinationNumbers']
+    except Exception as e:
+        logger.error(f"Error getting verified phone numbers from Pinpoint: {e}")
+        raise
+
+def add_phone_number(phone_number: str) -> str:
+    logger.info(f"Adding phone number to Pinpoint: {phone_number}")
+    try:
+        response = pinpoint_sms.create_verified_destination_number(
+            DestinationPhoneNumber=phone_number
+        )
+        logger.info(f"Phone number added to Pinpoint: {response['VerifiedDestinationNumberId']}")
+        return response['VerifiedDestinationNumberId']
+    except Exception as e:
+        logger.error(f"Error adding phone number to Pinpoint: {e}")
+        raise
+
+def remove_phone_number(aws_phone_number_id: str) -> None:
+    logger.info(f"Removing phone number from Pinpoint: {aws_phone_number_id}")
+    try:
+        response = pinpoint_sms.delete_verified_destination_number(
+            VerifiedDestinationNumberId=aws_phone_number_id
+        )
+        logger.info(f"Phone number removed from Pinpoint: {response}")
+    except Exception as e:
+        logger.error(f"Error removing phone number from Pinpoint: {e}")
+        raise
+
+def send_pinpoint_sms_notification(event: dict) -> None:
     logger.info("Send SMS Notification: %s", event)
     try:
         response = pinpoint_sms.send_text_message(

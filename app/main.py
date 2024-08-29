@@ -60,6 +60,11 @@ def create_user(user_create: user_schemas.UserCreate, db: Session = Depends(get_
         logger.warning(f"Username '{user_create.username}' already registered")
         raise HTTPException(status_code=400, detail="Username already registered")
     
+    db_user = user_crud.get_user_by_phone_number(db, user_create.phone_number)
+    if db_user:
+        logger.warning(f"Phone number '{user_create.phone_number}' already registered")
+        raise HTTPException(status_code=400, detail="Phone number already registered")
+    
     created_user = user_crud.create_user(db, user_create)
     logger.info(f"User '{user_create.username}' created successfully")
     return created_user
@@ -72,8 +77,20 @@ def update_user(user_id: int, user_update: user_schemas.UserUpdate, db: Session 
         logger.warning(f"User with ID '{user_id}' not found")
         raise HTTPException(status_code=404, detail="User not found")
     
-    if db_user.phone_number == user_update.phone_number:
+    if db_user.phone_number == user_update.phone_number and db_user.username == user_update.username:
         return db_user
+    
+    if user_update.username:
+        user_with_new_username = user_crud.get_user_by_username(db, user_update.username)
+        if db_user:
+            logger.warning(f"Username '{user_update.username}' already registered")
+            raise HTTPException(status_code=400, detail="Username already registered")
+    
+    if user_update.phone_number:
+        user_with_new_phone = user_crud.get_user_by_phone_number(db, user_update.phone_number)
+        if db_user:
+            logger.warning(f"Phone number '{user_update.phone_number}' already registered")
+            raise HTTPException(status_code=400, detail="Phone number already registered")
     
     updated_user = user_crud.update_user(db, db_user, user_update)
     logger.info(f"User with ID '{user_id}' updated successfully")
@@ -89,7 +106,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     
     user_crud.delete_user_by_id(
         db=db, 
-        user_id=user_id, 
+        user=db_user, 
         get_alarms_by_user_func=alarm_crud.get_alarms_by_user_id, 
         delete_alarm_func=alarm_crud.delete_alarm_by_id
     )
