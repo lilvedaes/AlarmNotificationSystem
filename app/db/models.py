@@ -1,9 +1,9 @@
-from sqlalchemy import Column, Integer, String, Text, Time, Boolean, ForeignKey, ARRAY, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Text, Time, Boolean, ForeignKey, ARRAY, TIMESTAMP, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql import func
-from typing import List
+from typing import List, Optional
 
 Base = declarative_base()
 
@@ -35,3 +35,18 @@ class Alarm(Base):
     
     # Relationship to user
     user: Mapped["User"] = relationship(back_populates="alarms")
+    
+    # One-to-one relationship with AlarmJob
+    alarm_job: Mapped[Optional["AlarmJob"]] = relationship("AlarmJob", back_populates="alarm", uselist=False)
+
+class AlarmJob(Base):
+    __tablename__ = 'alarm_jobs'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    alarm_id = Column(Integer, ForeignKey('alarms.id', ondelete='CASCADE'), nullable=False, unique=True)  # Ensure one-to-one
+    sms_job_id = Column(String(255), nullable=True)
+    email_job_id = Column(String(255), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), default=func.now())
+    
+    # Relationship to alarm
+    alarm: Mapped["Alarm"] = relationship("Alarm", back_populates="alarm_job")

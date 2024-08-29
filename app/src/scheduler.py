@@ -5,6 +5,15 @@ from app.src import schemas
 from app.config import settings
 from app.src.constants import DAY_OF_WEEK_MAP
 from typing import Callable, Dict
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # APScheduler setup
 jobstores = {
@@ -40,14 +49,35 @@ def schedule_alarm(
         **alarm.model_dump()
     }
     
-    # Schedule the send notidication function using APScheduler
-    scheduler.add_job(
-        func=notification_function,
-        args=[event],
-        trigger=trigger,
-        id=f"alarm_{contact_key}_{alarm.id}",
-        replace_existing=True
-    )
+    # Schedule the send notification function using APScheduler
+    try:
+        job_id = f"alarm_{contact_key}_{alarm.id}"
+        scheduler.add_job(
+            func=notification_function,
+            args=[event],
+            trigger=trigger,
+            id=job_id,
+            replace_existing=True
+        )
+        logger.info(f"Successfully scheduled job with ID {job_id}")
+    except Exception as e:
+        logger.error(f"Error scheduling job with ID {job_id}: {e}")
+        raise
+
+    return job_id
+
+# Function to unschedule alarm
+def unschedule_alarm(job_id: str):
+    try:
+        if scheduler.get_job(job_id):
+            scheduler.remove_job(job_id)
+            logger.info(f"Successfully removed job with ID {job_id}")
+        else:
+            logger.warning(f"No job found with ID {job_id} to unschedule")
+    except Exception as e:
+        logger.error(f"Error unscheduling job with ID {job_id}: {e}")
+        raise
+
 
 # Function to start scheduler from outside the module
 def start_scheduler():
