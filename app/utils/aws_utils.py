@@ -79,18 +79,26 @@ def send_pinpoint_sms_notification(event: dict) -> None:
             MessageBody=event['message'],
             MessageType='TRANSACTIONAL'
         )
+        log_notification_to_dynamodb(event)
         logger.info(f"SMS notification sent successfully: {response}")
     except Exception as e:
         logger.error(f"Error sending SMS notification: {e}")
         raise
 
 def log_notification_to_dynamodb(event):
-    notification_log_table.put_item(
-        Item={
-            'alarm_id': event['id'],
-            'user_id': event['user_id'],
-            'phone_number': event['phone_number'],
-            'message': event['message'],
-            'timestamp': datetime.now().isoformat(),
-        }
-    )
+    try:
+        notification_log_table.put_item(
+            Item={
+                'id': event['id'],
+                'user_id': event['user_id'],
+                'phone_number': event['phone_number'],
+                'time': str(event['time']),
+                'days_of_week': event['days_of_week'],
+                'is_active': event['is_active'],
+                'message': event['message'],
+                'timestamp': datetime.now().isoformat(),
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error logging notification to DynamoDB: {e}")
+        raise
