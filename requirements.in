@@ -3,6 +3,8 @@ boto3
 fastapi[standard]
 pydantic
 pydantic-settings
+pydantic-extra-types
+phonenumbers
 sqlalchemy
 uvicorn
 urllib3

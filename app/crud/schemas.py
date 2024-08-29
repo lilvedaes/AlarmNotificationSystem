@@ -1,13 +1,17 @@
 from pydantic import BaseModel, EmailStr, constr, field_validator, model_validator
+from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import List, Optional
 from typing_extensions import Self
 from datetime import time
+
+# Restrict phone number format
+PhoneNumber.phone_format = 'E164'
 
 # User Schemas
 class UserBase(BaseModel):
     username: constr(max_length=50)
     email: EmailStr
-    phone_number: constr(max_length=20)
+    phone_number: PhoneNumber
 
 # UserCreate will include all UserBase fields
 class UserCreate(UserBase):
@@ -15,8 +19,8 @@ class UserCreate(UserBase):
 
 # UserUpdate will include only email and phone_number
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr]
-    phone_number: Optional[constr(max_length=20)]
+    email: Optional[EmailStr] = None
+    phone_number: Optional[PhoneNumber] = None
 
     # Validate that at least one of email or phone_number is provided
     @model_validator(mode='after')
@@ -79,8 +83,8 @@ class Alarm(AlarmBase):
 # AlarmJob Schemas
 class AlarmJobBase(BaseModel):
     alarm_id: int
-    sms_job_id: Optional[str]
-    email_job_id: Optional[str]
+    sms_job_id: Optional[str] = None
+    email_job_id: Optional[str] = None
 
 # AlarmJobCreate will include all AlarmJobBase fields
 class AlarmJobCreate(AlarmJobBase):

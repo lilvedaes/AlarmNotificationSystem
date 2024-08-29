@@ -20,7 +20,7 @@ def get_alarm_by_id(db: Session, alarm_id: int) -> schemas.Alarm:
         logger.error(f"Unexpected error fetching alarm with ID '{alarm_id}': {e}")
         raise
 
-def get_alarms_by_user(db: Session, user_id: int) -> List[schemas.Alarm]:
+def get_alarms_by_user_id(db: Session, user_id: int) -> List[schemas.Alarm]:
     try:
         result = db.execute(select(models.Alarm).filter(models.Alarm.user_id == user_id))
         return result.scalars().all()
