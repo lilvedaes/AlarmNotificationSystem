@@ -1,19 +1,11 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.triggers.cron import CronTrigger
-from app.src import schemas
+from app.crud import schemas
 from app.config import settings
-from app.src.constants import DAY_OF_WEEK_MAP
+from app.utils.constants import DAY_OF_WEEK_MAP
 from typing import Callable, Dict
-import logging
-
-# Set up logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+from app.utils.logger import logger
 
 # APScheduler setup
 jobstores = {

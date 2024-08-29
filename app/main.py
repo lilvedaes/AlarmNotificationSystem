@@ -1,22 +1,13 @@
-import logging
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.concurrency import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
-
-from app.src import schemas, crud
+from app.crud import schemas, crud
 from app.db.database import SessionLocal
-from app.src.scheduler import start_scheduler
-
-# Set up logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+from app.utils.scheduler import start_scheduler
+from app.utils.logger import logger
 
 # Dependency to get the synchronous DB session
 def get_db():
