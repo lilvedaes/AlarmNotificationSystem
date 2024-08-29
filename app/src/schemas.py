@@ -51,6 +51,10 @@ class AlarmBase(BaseModel):
 class AlarmCreate(AlarmBase):
     username: str  # Username instead of user_id
 
+# AlarmUpdate will include only is_active
+class AlarmUpdate(BaseModel):
+    is_active: bool
+
 # The Alarm schema will include all AlarmBase fields + id and user_id
 class Alarm(AlarmBase):
     id: int

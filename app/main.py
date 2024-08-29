@@ -90,7 +90,7 @@ def create_alarm(alarm: schemas.AlarmCreate, db: Session = Depends(get_db)):
         logger.warning(f"Alarm creation failed for '{alarm.username}': Both send_email and send_sms are False")
         raise HTTPException(status_code=400, detail="At least one of send_email or send_sms must be True")
     
-    created_alarm = crud.create_alarm(db=db, alarm=alarm, user=db_user)
+    created_alarm = crud.create_alarm(db=db, alarm_create=alarm, user=db_user)
     logger.info(f"Alarm with ID '{created_alarm.id}' created successfully for user '{alarm.username}'")
     return created_alarm
 
@@ -105,6 +105,21 @@ def get_alarms_by_username(username: str, db: Session = Depends(get_db)):
     alarms = crud.get_alarms_by_user(db=db, user_id=db_user.id)
     logger.info(f"Fetched {len(alarms)} alarms for user '{username}'")
     return alarms
+
+# Update alarm (activate/deactivate)
+@app.put("/alarms/{alarm_id}", response_model=schemas.Alarm)
+def update_alarm(alarm_id: int, alarm_update: schemas.AlarmUpdate, db: Session = Depends(get_db)):
+    db_alarm = crud.get_alarm(db, alarm_id=alarm_id)
+    if not db_alarm:
+        logger.warning(f"Alarm with ID '{alarm_id}' not found")
+        raise HTTPException(status_code=404, detail="Alarm not found")
+    
+    if db_alarm.is_active == alarm_update.is_active:
+        return db_alarm
+    
+    updated_alarm = crud.update_alarm(db, db_alarm, alarm_update)
+    logger.info(f"Alarm with ID '{alarm_id}' updated successfully")
+    return updated_alarm
 
 # Delete alarm
 @app.delete("/alarms/{alarm_id}")

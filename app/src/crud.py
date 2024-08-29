@@ -12,6 +12,14 @@ from app.src.scheduler import schedule_alarm, unschedule_alarm
 logger = logging.getLogger(__name__)
 
 # User CRUD operations
+def get_user_by_id(db: Session, id: int) -> schemas.User:
+    try:
+        result = db.execute(select(models.User).filter(models.User.id == id))
+        return result.scalars().first()
+    except SQLAlchemyError as e:
+        logger.error(f"Error fetching user by id '{id}': {e}")
+        raise
+
 def get_user_by_username(db: Session, username: str) -> schemas.User:
     try:
         result = db.execute(select(models.User).filter(models.User.username == username))
@@ -84,59 +92,58 @@ def get_alarm(db: Session, alarm_id: int) -> schemas.Alarm:
         logger.error(f"Error fetching alarm with ID '{alarm_id}': {e}")
         raise
 
-def create_alarm(db: Session, alarm: schemas.AlarmCreate, user: schemas.User) -> schemas.Alarm:
+def create_alarm(db: Session, alarm_create: schemas.AlarmCreate, user: schemas.User) -> schemas.Alarm:
     try:
         # Add alarm to db
         db_alarm = models.Alarm(
             user_id=user.id,
-            message=alarm.message,
-            time=alarm.time,
-            days_of_week=alarm.days_of_week,
-            is_active=alarm.is_active,
-            send_sms=alarm.send_sms,
-            send_email=alarm.send_email
+            message=alarm_create.message,
+            time=alarm_create.time,
+            days_of_week=alarm_create.days_of_week,
+            is_active=alarm_create.is_active,
+            send_sms=alarm_create.send_sms,
+            send_email=alarm_create.send_email
         )
         db.add(db_alarm)
         db.commit()
         db.refresh(db_alarm)
 
-        # Convert to schema
-        alarm_schema = schemas.Alarm.model_validate(db_alarm)
+        # Validate schema
+        alarm = schemas.Alarm.model_validate(db_alarm)
 
         # Schedule alarms with APScheduler
-        if alarm_schema.is_active:
-            try:
-                sms_job_id = None
-                email_job_id = None
-                if alarm_schema.send_sms:
+        try:
+            sms_job_id = None
+            email_job_id = None
+            if alarm.is_active:
+                if alarm.send_sms:
                     sms_job_id = schedule_alarm(
                         notification_function=send_sns_sms_notification, 
                         contact_info=user.phone_number, 
                         contact_key='phone_number', 
-                        alarm=alarm_schema
+                        alarm=alarm
                     )
-                if alarm_schema.send_email:
+                if alarm.send_email:
                     email_job_id = schedule_alarm(
                         notification_function=send_sns_email_notification, 
                         contact_info=user.email, 
                         contact_key='email', 
-                        alarm=alarm_schema
+                        alarm=alarm
                     )
 
-                # Creating alarm job in DB
-                create_alarm_job(db, schemas.AlarmJobCreate(
-                    alarm_id=alarm_schema.id,
-                    sms_job_id=sms_job_id,
-                    email_job_id=email_job_id
-                ))
+            # Creating alarm job in DB
+            create_alarm_job(db, schemas.AlarmJobCreate(
+                alarm_id=alarm.id,
+                sms_job_id=sms_job_id,
+                email_job_id=email_job_id
+            ))
+        except Exception as e:
+            # Rollback if there's an error during scheduling or creating alarm job
+            db.rollback()
+            logger.error(f"Error scheduling alarm '{db_alarm.id}' for user '{user.id}': {e}")
+            raise
 
-            except Exception as e:
-                # Rollback if there's an error during scheduling or creating alarm job
-                db.rollback()
-                logger.error(f"Error scheduling alarm '{db_alarm.id}' for user '{user.id}': {e}")
-                raise
-
-        return alarm_schema
+        return alarm
 
     except SQLAlchemyError as e:
         # Rollback on database-related errors
@@ -153,6 +160,65 @@ def get_alarms_by_user(db: Session, user_id: int) -> List[schemas.Alarm]:
         return result.scalars().all()
     except SQLAlchemyError as e:
         logger.error(f"Error fetching alarms for user ID '{user_id}': {e}")
+        raise
+
+def update_alarm(db: Session, alarm: schemas.Alarm, alarm_update: schemas.AlarmUpdate) -> schemas.Alarm:
+    try:
+        # Validate schema
+        alarm = schemas.Alarm.model_validate(alarm)
+
+        # Update the alarm
+        alarm.is_active = alarm_update.is_active
+        db.commit()
+
+        sms_job_id = None
+        email_job_id = None
+        
+        # Schedule alarms if active
+        if alarm.is_active:
+            # Get user information
+            user = get_user_by_id(db, alarm.user_id)
+            if alarm.send_sms:
+                sms_job_id = schedule_alarm(
+                    notification_function=send_sns_sms_notification, 
+                    contact_info=user.phone_number, 
+                    contact_key='phone_number', 
+                    alarm=alarm
+                )
+            if alarm.send_email:
+                email_job_id = schedule_alarm(
+                    notification_function=send_sns_email_notification, 
+                    contact_info=user.email, 
+                    contact_key='email', 
+                    alarm=alarm
+                )
+        else:
+            # Unschedule alarms if inactive
+            alarm_job = get_alarm_job(db, alarm.id)
+            if alarm_job:
+                if alarm_job.sms_job_id:
+                    unschedule_alarm(alarm_job.sms_job_id)
+                if alarm_job.email_job_id:
+                    unschedule_alarm(alarm_job.email_job_id)
+            sms_job_id = None
+            email_job_id = None
+
+        # Update alarm job in DB
+        db.execute(
+            models.AlarmJob.__table__.update()
+            .where(models.AlarmJob.alarm_id == alarm.id)
+            .values(sms_job_id=sms_job_id, email_job_id=email_job_id)
+        )
+        db.commit()
+
+        return schemas.Alarm.model_validate(alarm)
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Error updating alarm with ID '{alarm.id}': {e}")
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error occurred while updating alarm with ID '{alarm.id}': {e}")
         raise
 
 def delete_alarm(db: Session, alarm_id: int) -> None:

@@ -136,6 +136,7 @@ The available API endpoints are:
 - Get user by username: GET /users/{username}
 - Create alarm: POST /alarms/
 - Get alarms by username: GET /alarms/user/{username}
+- Update alarm by alarm ID: PUT /alarms/{alarm_id}
 - Delete alarm by alarm ID: DELETE /alarms/{alarm_id}
 
 ### Scheduling and Notifications
