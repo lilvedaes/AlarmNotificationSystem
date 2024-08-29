@@ -33,7 +33,7 @@ def schedule_alarm(
     
     # Create the event dictionary
     event = {
-        phone_number: phone_number,
+        'phone_number': phone_number,
         **alarm.model_dump()
     }
     
