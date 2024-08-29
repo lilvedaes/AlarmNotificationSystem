@@ -21,8 +21,7 @@ def create_alarm_job(db: Session, alarm_job: alarm_job_schemas.AlarmJobCreate) -
     try:
         db_alarm_job = models.AlarmJob(
             alarm_id=alarm_job.alarm_id,
-            sms_job_id=alarm_job.sms_job_id,
-            email_job_id=alarm_job.email_job_id
+            sms_job_id=alarm_job.sms_job_id
         )
         db.add(db_alarm_job)
         db.commit()

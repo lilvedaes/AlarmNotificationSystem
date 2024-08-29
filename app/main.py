@@ -72,7 +72,7 @@ def update_user(user_id: int, user_update: user_schemas.UserUpdate, db: Session 
         logger.warning(f"User with ID '{user_id}' not found")
         raise HTTPException(status_code=404, detail="User not found")
     
-    if db_user.phone_number == user_update.phone_number and db_user.email == user_update.email:
+    if db_user.phone_number == user_update.phone_number:
         return db_user
     
     updated_user = user_crud.update_user(db, db_user, user_update)

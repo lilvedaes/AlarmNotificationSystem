@@ -12,7 +12,6 @@ class User(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), nullable=False, unique=True)
-    email = Column(String(255), nullable=False)
     phone_number = Column(String(20), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     
@@ -28,8 +27,6 @@ class Alarm(Base):
     time = Column(Time, nullable=False)
     days_of_week = Column(ARRAY(Integer), nullable=False)  # Days of the week array Monday = 0, Sunday = 6
     is_active = Column(Boolean, default=True)
-    send_sms = Column(Boolean, default=False)
-    send_email = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), default=func.now(), onupdate=func.now())
     
@@ -45,7 +42,6 @@ class AlarmJob(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     alarm_id = Column(Integer, ForeignKey('alarms.id', ondelete='CASCADE'), nullable=False, unique=True)  # Ensure one-to-one
     sms_job_id = Column(String(255), nullable=True)
-    email_job_id = Column(String(255), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     
     # Relationship to alarm

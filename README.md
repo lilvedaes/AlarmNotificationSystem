@@ -1,9 +1,9 @@
 # Alarm Notification System
 ## Overview
-The Alarm Notification System is a FastAPI-based application that allows users to schedule notifications (or "alarms") at specified times of day. Users can configure the notifications to be sent via email, SMS, or both, on specific days of the week. The system leverages AWS services (Pinpoint, End User Messaging, DynamoDB), and PostgreSQL for data storage.
+The Alarm Notification System is a FastAPI-based application that allows users to schedule notifications (or "alarms") at specified times of day. Users can configure the notifications to be sent via SMS, on specific days of the week. The system leverages AWS services (Pinpoint, End User Messaging, DynamoDB), and PostgreSQL for data storage.
 
 ## Features
-- User-Configurable Notifications: Users can set multiple alarms with specific times, days, and notification methods (email, SMS, or both).
+- User-Configurable Notifications: Users can set multiple alarms with specific times, days, and messages. They can also deactivate/activate them.
 - Scheduled Notifications: Notifications scheduled with APScheduler.
 - AWS Integration: Uses AWS Pinpoint and AWS End User Messaging for sending notifications and DynamoDB for logging.
 - Dockerized: The application is fully containerized using Docker.
@@ -96,7 +96,6 @@ AWS_SECRET_ACCESS_KEY=your-secret-access-key
 AWS_DEFAULT_REGION=your-region
 
 END_USER_MESSAGING_SENDER_ID_ARN=arn-for-your-sender-ID
-PINPOINT_VERIFIED_EMAIL=email-verified-by-pinpoint
 ```
 
 Note:

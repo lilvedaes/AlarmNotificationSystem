@@ -6,7 +6,6 @@ class Settings(BaseSettings):
     aws_secret_access_key: str
     aws_default_region: str
     end_user_messaging_sender_id_arn: str
-    pinpoint_verified_email: str
     postgres_user: str
     postgres_password: str
     postgres_db: str

@@ -5,7 +5,6 @@ from typing import Optional
 class AlarmJobBase(BaseModel):
     alarm_id: int
     sms_job_id: Optional[str] = None
-    email_job_id: Optional[str] = None
 
 # AlarmJobCreate will include all AlarmJobBase fields
 class AlarmJobCreate(AlarmJobBase):

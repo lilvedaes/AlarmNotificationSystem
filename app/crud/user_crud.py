@@ -32,7 +32,6 @@ def create_user(db: Session, user: user_schemas.UserCreate) -> user_schemas.User
     try:
         db_user = models.User(
             username=user.username,
-            email=user.email,
             phone_number=user.phone_number,
         )
         db.add(db_user)
@@ -58,15 +57,11 @@ def update_user(db: Session, user: user_schemas.User, user_update: user_schemas.
         user = user_schemas.User.model_validate(user)
 
         # Update user
-        if user_update.email:
-            user.email = user_update.email
-        if user_update.phone_number:
-            user.phone_number = user_update.phone_number
-
+        user.phone_number = user_update.phone_number
         db.execute(
             update(models.User)
             .where(models.User.id == user.id)
-            .values(email=user.email, phone_number=user.phone_number)
+            .values(phone_number=user.phone_number)
         )
         db.commit()
 

@@ -4,7 +4,6 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.exc import SQLAlchemyError
 from app.db import models
 from app.schemas import user_schemas, alarm_schemas, alarm_job_schemas
-from app.utils.aws_utils import send_pinpoint_sms_notification, send_pinpoint_email_notification
 from app.utils.scheduler import schedule_alarm, unschedule_alarm
 from app.utils.logger import logger
 
@@ -45,9 +44,7 @@ def create_alarm(
             message=alarm_create.message,
             time=alarm_create.time,
             days_of_week=alarm_create.days_of_week,
-            is_active=alarm_create.is_active,
-            send_sms=alarm_create.send_sms,
-            send_email=alarm_create.send_email
+            is_active=alarm_create.is_active
         )
         db.add(db_alarm)
         db.commit()
@@ -58,28 +55,16 @@ def create_alarm(
 
         # Schedule alarms with APScheduler
         sms_job_id = None
-        email_job_id = None
         if alarm.is_active:
-            if alarm.send_sms:
-                sms_job_id = schedule_alarm(
-                    notification_function=send_pinpoint_sms_notification, 
-                    contact_info=user.phone_number, 
-                    contact_key='phone_number', 
-                    alarm=alarm
-                )
-            if alarm.send_email:
-                email_job_id = schedule_alarm(
-                    notification_function=send_pinpoint_email_notification, 
-                    contact_info=user.email, 
-                    contact_key='email', 
-                    alarm=alarm
-                )
+            sms_job_id = schedule_alarm(
+                alarm,
+                user.phone_number
+            )
 
         # Creating alarm job in DB
         create_alarm_job_func(db, alarm_job_schemas.AlarmJobCreate(
             alarm_id=alarm.id,
-            sms_job_id=sms_job_id,
-            email_job_id=email_job_id
+            sms_job_id=sms_job_id
         ))
 
         return alarm
@@ -115,44 +100,29 @@ def update_alarm(
             .values(is_active=alarm.is_active)
         )
         db.commit()
-
-        sms_job_id = None
-        email_job_id = None
         
         # Schedule alarms if active
+        sms_job_id = None
         if alarm.is_active:
             # Get user information
             user = get_user_by_id_func(db, alarm.user_id)
-            if alarm.send_sms:
-                sms_job_id = schedule_alarm(
-                    notification_function=send_pinpoint_sms_notification, 
-                    contact_info=user.phone_number, 
-                    contact_key='phone_number', 
-                    alarm=alarm
-                )
-            if alarm.send_email:
-                email_job_id = schedule_alarm(
-                    notification_function=send_pinpoint_email_notification, 
-                    contact_info=user.email, 
-                    contact_key='email', 
-                    alarm=alarm
-                )
+            sms_job_id = schedule_alarm(
+                alarm,
+                user.phone_number
+            )
         else:
             # Unschedule alarms if inactive
             alarm_job = get_alarm_job_func(db, alarm.id)
             if alarm_job:
                 if alarm_job.sms_job_id:
                     unschedule_alarm(alarm_job.sms_job_id)
-                if alarm_job.email_job_id:
-                    unschedule_alarm(alarm_job.email_job_id)
             sms_job_id = None
-            email_job_id = None
 
         # Update alarm job in DB
         db.execute(
             update(models.AlarmJob)
             .where(models.AlarmJob.alarm_id == alarm.id)
-            .values(sms_job_id=sms_job_id, email_job_id=email_job_id)
+            .values(sms_job_id=sms_job_id)
         )
         db.commit()
 
@@ -175,8 +145,6 @@ def delete_alarm_by_id(db: Session, alarm_id: int, get_alarm_job_func, delete_al
         if alarm_job:
             if alarm_job.sms_job_id:
                 unschedule_alarm(alarm_job.sms_job_id)
-            if alarm_job.email_job_id:
-                unschedule_alarm(alarm_job.email_job_id)
 
         # Delete the alarm and alarm job from the database
         db.execute(delete(models.Alarm).filter(models.Alarm.id == alarm_id))
