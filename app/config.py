@@ -4,7 +4,7 @@ class Settings(BaseSettings):
     database_url: str
     aws_access_key_id: str
     aws_secret_access_key: str
-    aws_region: str
+    aws_default_region: str
     sns_topic_arn: str
     postgres_user: str
     postgres_password: str

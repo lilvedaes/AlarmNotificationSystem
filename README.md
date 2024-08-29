@@ -93,7 +93,7 @@ TIMEZONE=Timezone
 
 AWS_ACCESS_KEY_ID=your-access-key-id
 AWS_SECRET_ACCESS_KEY=your-secret-access-key
-AWS_REGION=your-region
+AWS_DEFAULT_REGION=your-region
 SNS_TOPIC_ARN=arn:aws:sns:your-region:your-account-id:your-topic-name
 ```
 
