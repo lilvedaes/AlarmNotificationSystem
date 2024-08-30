@@ -127,6 +127,9 @@ Ensure that your AWS credentials are set up correctly in the .env file and that 
 aws configure
 ```
 
+Make sure you have a DynamoDB table in aws called `AlarmNotificationSystemNotifications` with key `id` and sort key `user_id`.
+Also configure an Amazon Pinpoint project and configure an End User Messaging Sender ID to send text messages.
+
 ## Usage
 ### API Endpoints
 The available API endpoints are:
